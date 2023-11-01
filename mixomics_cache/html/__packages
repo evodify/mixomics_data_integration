@@ -1,5 +1,5 @@
-base
 MASS
 lattice
 ggplot2
 mixOmics
+igraph

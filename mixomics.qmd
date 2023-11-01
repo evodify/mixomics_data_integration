@@ -7,6 +7,23 @@ editor_options:
   chunk_output_type: console
 ---
 
+Setup the environment
+
+```{r,message=FALSE,warning=FALSE,eval=FALSE}
+
+# List of packages to be installed
+packages <- c("mixOmics")
+
+# Check and install missing packages
+new_packages <- packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages, dependencies = TRUE, type = "binary")
+
+# Load the libraries
+library(mixOmics)
+
+
+```
+
 # Introduction
 
 In classical data integration, we would like to use information across different modalities (eg., transcriptome, proteome and metabolome) to gain more comprehensive insights into the biological systems under study. This type of data can be used for an array of different purposes including but not limited to molecular classification, stratification of patients, outcome predictions and understanding of regulatory processes such as gene regulation and pathway aAnalysis.
@@ -162,13 +179,23 @@ $$
 
 where $\Sigma_{XY}$ is the cross-covariance matrix, $U$ and $V$ are the canonical weights for $X$ and $Y$, and $\Lambda$ contains the canonical correlations.
 
-CCA often involves finding multiple pairs of canonical variables. After finding the first pair, we use a deflation process to remove their effect and proceed to find the next pair. This iterative process continues until we extract the desired number of canonical variable pairs.
+We can now find the canonical variables:
 
 $$
-\Sigma_{XY}^{(2)} = \Sigma_{XY}^{(1)} - \rho_1 u_1 v_1^T
+T_x = XU
+$$ $$
+T_y = YV
 $$
 
-where $\Sigma_{XY}^{(1)}$ is the original cross-covariance matrix, $\rho_1$ is the first canonical correlation, and $u_1$, $v_1$ are the first pairs of canonical variables from datasets $X$ and $Y$, respectively. The process is repeated to extract additional pairs of canonical variables.
+After finding the first pair, we use a deflation process to remove their effect and proceed to find the next pair. This iterative process continues until we extract the desired number of canonical variable pairs.
+
+$$
+X = X-T_x(X^TT_U(T^T_UT_U)^{-1})^T
+$$ and for $Y$
+
+$$
+Y = Y-T_y(Y^TT_U(T^T_UT_U)^{-1})^T
+$$ The process is repeated to extract additional pairs of canonical variables.
 
 Let's have a look at how we can derive this in R using miRNA and mRNA data
 
@@ -266,7 +293,7 @@ In the context of CCA, the power method can be used to find the canonical correl
 #### Steps in CCA Context:
 
 1.  **Calculate Initial Loadings:**
-    -   Compute the initial loadings $u_0$ and $v_0$ for datasets $X$ and $Y$ respectively, obtained from the SVD of the datasets.
+    -   Compute the initial loadings $u_0$ and $v_0$ for datasets $X$ and $Y$ respectively, this can be done randomly!
     -   Compute the initial scores $s_{X,0} = Xu_0$ and $s_{Y,0} = Yv_0$.
 2.  **Iteratively Update Loadings and Scores:**
     -   For each dataset, update the loadings based on the regression on the scores of the other dataset: $$
@@ -282,7 +309,7 @@ In the context of CCA, the power method can be used to find the canonical correl
     -   Compute the change in loadings: $$
         \epsilon_u = \|u_{k+1} - u_k\|, \quad \epsilon_v = \|v_{k+1} - v_k\|.
         $$
-    -   If $\epsilon_u < \epsilon$ and $\epsilon_v < \epsilon$, where $\epsilon$ is a small positive threshold, the algorithm has converged.
+    -   If $max(\epsilon_u,\epsilon_v) < \epsilon$, where $\epsilon$ is a small positive threshold, the algorithm has converged.
 4.  **Deflation:**
     -   After obtaining each pair of canonical variables, deflate the datasets to extract additional canonical variables: $$
         X = X - s_{X,k+1} \left( \frac{X^T s_{X,k+1}}{s_{X,k+1}^T s_{X,k+1}} \right)^T,
@@ -290,7 +317,7 @@ In the context of CCA, the power method can be used to find the canonical correl
         Y = Y - s_{Y,k+1} \left( \frac{Y^T s_{Y,k+1}}{s_{Y,k+1}^T s_{Y,k+1}} \right)^T.
         $$
 
-The PCA loadings are updated by projecting each dataset onto the scores of the other dataset, capturing the shared information and maximizing the correlation between the datasets. The convergence criterion ensures that the iterative process stops when the loadings become stable, indicating that the canonical variables that maximize the correlation between the datasets have been found. The deflation step is similar to that of SVD.
+The loadings are updated by projecting each dataset onto the scores of the other dataset, capturing the shared information and maximizing the correlation between the datasets. The convergence criterion ensures that the iterative process stops when the loadings become stable, indicating that the canonical variables that maximize the correlation between the datasets have been found. The deflation step is similar to that of SVD.
 
 #### Implemntation in R
 
@@ -309,8 +336,8 @@ number_of_components <- 2
 scores_list<-list()
 for(cmp in 1:number_of_components)
 {
-# initialize the loadings based on SVD
-initial_loadings <- lapply(data_merged,function(x){svd(x,1,1)$v})
+# initialize the loadings based on random data
+initial_loadings <- lapply(data_merged,function(x){runif(ncol(x))})
 # define an empty loading for new ones
 new_loadings<-initial_loadings
 new_loadings[]<-NA
@@ -361,7 +388,7 @@ par(mfrow=c(2,2))
 plot(scores_list[[1]][,1],scores_list[[2]][,1],
      col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA miRNA")
 plot(scores_list[[1]][,2],scores_list[[2]][,2],
-     col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA miRNA")
+     col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA mRNA")
 plot(scores_list[[1]][,1],scores_list[[1]][,2],col=breast.TCGA$data.train$subtype,xlab="miRNA",ylab="mRNA",main="l1")
 plot(scores_list[[2]][,1],scores_list[[2]][,2],col=breast.TCGA$data.train$subtype,xlab="miRNA",ylab="mRNA",main="l2")
 
@@ -392,7 +419,7 @@ Similarly, for dataset $Y$: $$
 
 So given this simple update we can now perform CCA on multiple datasets.
 
-Let's try to implement this in R just using weight of 1.
+Let's try to implement this in R just using weight of 1. To make things faster, instead of random assignment of loadings, we start with SVD.
 
 ```{r}
 # center the data
@@ -460,7 +487,7 @@ par(mfrow=c(2,2))
 plot(scores_list[[1]][,1],scores_list[[2]][,1],
      col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA miRNA")
 plot(scores_list[[1]][,2],scores_list[[2]][,2],
-     col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA miRNA")
+     col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA mRNA")
 plot(scores_list[[1]][,3],scores_list[[2]][,3],
      col=breast.TCGA$data.train$subtype,xlab="l1",ylab="l2",main="CCA protein")
 
@@ -470,7 +497,7 @@ Congratulation. We now have fully functional CCA for data integration. We can do
 
 ### GCCA in R
 
-In reality one does not have to implement the whole algorithm! mixOmics provides us with a very good interface to do GCCA with a lot of flexility. The main function is `wrapper.sgcca` and we are going to have a look some its main functionality now.
+In reality one does not have to implement the whole algorithm! mixOmics provides us with a very good interface to do GCCA with a lot of flexibility. The main function is `wrapper.sgcca` and we are going to have a look some its main functionality now.
 
 ```{r}
 # prepare data
@@ -488,6 +515,7 @@ gcc_three_datasets <- mixOmics::wrapper.sgcca(data_merged,ncomp = 2,scale = FALS
 mixOmics::plotIndiv(gcc_three_datasets,group = breast.TCGA$data.train$subtype,ind.names = FALSE,legend = TRUE)
 
 ```
+
 So here comes the similar score plot of GCCA. We can clearly see the shared latent factors discovered by GCCA, separating our three groups. We can invesitage loadings to know more about what variables has more influence on these latent components.
 
 ```{r}
@@ -498,11 +526,11 @@ Here instead of having a single loading plot (i choice to show 20 variables for 
 
 There are options provided by the function. We are going to focus on the most imporant ones, namely `design` and `keepX`.
 
-I we previously demonstrated, we can weight the scores from different omics before combining them. The `design` parameter gives us a powerful way of choosing which data view to focus on more and define the relation between the data. 
+As we previously demonstrated, we can weight the scores from different omics before combining them. The `design` parameter gives us a powerful way of choosing which data view to focus on more and define the relation between the data.
 
 Think of `design` as a grid where each cell's value, ranging from 0 to 1, indicates the strength of the relationship between two corresponding data blocks. A value of 0 means no relationship, while 1 signifies a strong connection. When you're setting up your analysis, adjusting these values can help you emphasize or de-emphasize certain relationships, giving you the flexibility to focus on specific interactions that are of interest.
 
-For instance, if you’re curious about how two particular blocks of data interact, you’d set their corresponding value in the design matrix closer to 1. This tells sGCCA, “Hey, pay extra attention here!” Conversely, if you believe two other blocks aren’t significantly related, setting their value closer to 0 directs the analysis to not invest much energy in exploring that connection.
+For instance, if you're curious about how two particular blocks of data interact, you'd set their corresponding value in the design matrix closer to 1. This tells sGCCA, "Hey, pay extra attention here!" Conversely, if you believe two other blocks aren't significantly related, setting their value closer to 0 directs the analysis to not invest much energy in exploring that connection.
 
 in our previous example, we chose not to provide a design matrix, in this case, mixOmics will construct a design matrix in all datasets have strongest connect (1) to each other.
 
@@ -513,8 +541,7 @@ print(gcc_three_datasets$design)
 
 **Can you construct a design matrix and and rerun `wrapper.sgcca` and plot the results?**
 
-
-Lastly, `keepX`! This parameter is used in refining your GCCA analysis. It lets you to specify the number of variables to retain in each block of data during the analysis. `keepX` is like a filter that helps you keep only the most valuable variables, enhancing the clarity and focus of your analysis. You provide a vector of integers to keepX, each integer corresponding to the number of variables you want to retain from each data block. It’s a balancing act - retaining more variables can capture complex patterns but might also introduce noise. On the other hand, keeping fewer variables simplifies the model but might miss out on nuanced interactions. Adjusting keepX is a practical step in iterative model refinement, ensuring that your analysis is both robust and focused, honing in on the most informative variables to answer your specific research questions.
+Lastly, `keepX`! This parameter is used in refining your GCCA analysis. It lets you to specify the number of variables to retain in each block of data during the analysis. `keepX` is like a filter that helps you keep only the most valuable variables, enhancing the clarity and focus of your analysis. You provide a vector of integers to keepX, each integer corresponding to the number of variables you want to retain from each data block. It's a balancing act - retaining more variables can capture complex patterns but might also introduce noise. On the other hand, keeping fewer variables simplifies the model but might miss out on nuanced interactions. Adjusting keepX is a practical step in iterative model refinement, ensuring that your analysis is both robust and focused, honing in on the most informative variables to answer your specific research questions.
 
 **Can you set wrapper.sgcca to retain only 10 variables for each omics? Plot the data and the loadings**
 
@@ -522,11 +549,11 @@ For us, it is time to switch to supervised data integration using mixOmics.
 
 # Supervised integration
 
-So far we have been dealing with unsupervised data integration. Although we mentioned that we have done regression we did not do that for the purpose of predicting an outcome but rather just to connect different block of the data together through a shared subspace (latent factors). 
+So far we have been dealing with unsupervised data integration. Although we mentioned that we have done regression we did not do that for the purpose of predicting an outcome but rather just to connect different block of the data together through a shared subspace (latent factors).
 
 ## Partial Least Squares
 
-We are now going to formally define an outcome variable and use that to perform supervised data integration. This is where Partial Least Squares (PLS) comes into play, a method that not only facilitates the integration of data from various sources but also enables the prediction of an outcome variable by identifying the relationships between observed variables and the outcomes of interest. 
+We are now going to formally define an outcome variable and use that to perform supervised data integration. This is where Partial Least Squares (PLS) comes into play, a method that not only facilitates the integration of data from various sources but also enables the prediction of an outcome variable by identifying the relationships between observed variables and the outcomes of interest.
 
 Partial Least Squares (PLS) is a statistical method used in the context of predictive modeling and data analysis. It serves as a bridge between principal component analysis (PCA) and regression analysis. PLS is particularly useful when dealing with complex, high-dimensional, and multicollinear data, where traditional regression models may falter due to overfitting or multicollinearity issues.
 
@@ -534,24 +561,15 @@ In PLS, the predictor variables (or features) and the response variables (or out
 
 The PLS model aims to find the optimal set of weights that, when applied to the original variables, gives the best possible prediction of the outcome variable. It does this by decomposing both the predictor matrix $X$ and the response matrix $Y$ into the product of two lower-dimensional matrices, capturing the most relevant information in the data for predicting outcomes.
 
-Mathematically, the decomposition can be represented as:
-$$
+Mathematically, the decomposition can be represented as: $$
 X = T P^T + E
-$$
-$$
+$$ $$
 Y = U Q^T + F
 $$
 
-where:
-- $X$ is the matrix of predictor variables,
-- $Y$ is the matrix of response variables,
-- $T$ and $U$ are matrices of scores representing the latent variables,
-- $P$ and $Q$ are matrices of loadings,
-- $E$ and $F$ are matrices of residuals.
+where: - $X$ is the matrix of predictor variables, - $Y$ is the matrix of response variables, - $T$ and $U$ are matrices of scores representing the latent variables, - $P$ and $Q$ are matrices of loadings, - $E$ and $F$ are matrices of residuals.
 
-
-More specifically, there are two main differences between CCA and PLS when it comes to underlining equations.
-In CCA, we first calculate each covariance matrix for each dataset and then continue with the deflation. In contrast, in PLS, we need to calculate the cross covariance between between X and Y followed by SVD and deflation. 
+More specifically, there are two main differences between CCA and PLS when it comes to underlining equations. In CCA, we first calculate each covariance matrix for each dataset and then continue with the deflation. In contrast, in PLS, we need to calculate the cross covariance between between X and Y followed by SVD and deflation.
 
 The second difference is the deflation procedure itself. The main difference lies in the scores used for deflation. In CCA, each block is deflated by its own scores, while in PLS, both blocks are deflated by the $X$ scores, ensuring that the shared information captured is based on the covariance between $X$ and $Y$.
 
@@ -559,13 +577,11 @@ In CCA,:
 
 $$
 X' = X - T_X (X^T T_X) (T_X^T T_X)^{-1}
-$$
-$$
+$$ $$
 Y' = Y - T_Y (Y^T T_Y) (T_Y^T T_Y)^{-1}
 $$
 
-Where:
-- $T_Y$ is the matrix of scores associated with $Y$.
+Where: - $T_Y$ is the matrix of scores associated with $Y$.
 
 PLS Deflation:
 
@@ -581,15 +597,9 @@ $$
 Y' = Y - T_X (Y^T T_X) (T_X^T T_X)^{-1}
 $$
 
+In these equations: - $X'$ and $Y'$ are the deflated $X$ and $Y$ blocks, respectively. - $T_X$ is the matrix of scores associated with $X$. - The operation $X^T T_X$ and $Y^T T_X$ calculates the projection of $X$ and $Y$ on the scores $T_X$. - The term $(T_X^T T_X)^{-1}$ is the inverse of the matrix resulting from the multiplication of $T_X^T$ and $T_X$, used for normalization.
 
-In these equations:
-- $X'$ and $Y'$ are the deflated $X$ and $Y$ blocks, respectively.
-- $T_X$ is the matrix of scores associated with $X$.
-- The operation $X^T T_X$ and $Y^T T_X$ calculates the projection of $X$ and $Y$ on the scores $T_X$.
-- The term $(T_X^T T_X)^{-1}$ is the inverse of the matrix resulting from the multiplication of $T_X^T$ and $T_X$, used for normalization.
-
-
-So to see this in practice we will change our R code and do PLS instead of CCA. In the following example, we are going to using our mirna data as X and protein as Y. It is important to note that one of the most amazing properties of PLS is the capability to regress on multivariate outcome in contrast to ordinary regression which often involes a single outcome. 
+So to see this in practice we will change our R code and do PLS instead of CCA. In the following example, we are going to using our mirna data as X and protein as Y. It is important to note that one of the most amazing properties of PLS is the capability to regress on multivariate outcome in contrast to ordinary regression which often involes a single outcome.
 
 ```{r}
 
@@ -670,24 +680,18 @@ plot(scores_list[[1]][,1],scores_list[[2]][,1],
 
 
 ```
-Here we ended up with the single pairs of scores which maximize the covariance between the miRNA and proteins.
-You can think about PLS as ordinary regression where both the predictor and response variables are simultaneously transformed to a new space defined by latent variables. These latent variables are constructed to maximize the covariance between the transformed predictor and response variables, ensuring that the most relevant features for prediction are captured. Unlike ordinary regression, which can struggle with multicollinearity and high-dimensional data, PLS handles these issues efficiently by reducing the dimensionality and focusing on the most informative components of the data.
 
+Here we ended up with the single pairs of scores which maximize the covariance between the miRNA and proteins. You can think about PLS as ordinary regression where both the predictor and response variables are simultaneously transformed to a new space defined by latent variables. These latent variables are constructed to maximize the covariance between the transformed predictor and response variables, ensuring that the most relevant features for prediction are captured. Unlike ordinary regression, which can struggle with multicollinearity and high-dimensional data, PLS handles these issues efficiently by reducing the dimensionality and focusing on the most informative components of the data.
 
 ## Partial Least Squares
 
-As you have noticed, PLS alogrithm is not an integrative method. It is still applied on a single block of data (if we ignore Y as a block). Extension of PLS to multiple blocks of data is streight forward. We keep what we have done for CCA. The only part that we have to change is the deflation of $Y$. As we said given the block $X$ and $Y$ the deflation of $Y$ is based on the information captured in $X$, meaning its scores $T$. When it comes to multiple omics (data views), we don't have a single matrix of $X$ but rather we have $X_k$ where $k$ can be $1...K$, each is a separate dataset. A simple way to do the deflation of $Y$ relative to all the $X_k$ is to deflate the $Y$ for each dataset separately and then take the average of all deflation. More concretely, 
-
-
+As you have noticed, PLS alogrithm is not an integrative method. It is still applied on a single block of data (if we ignore Y as a block). Extension of PLS to multiple blocks of data is streight forward. We keep what we have done for CCA. The only part that we have to change is the deflation of $Y$. As we said given the block $X$ and $Y$ the deflation of $Y$ is based on the information captured in $X$, meaning its scores $T$. When it comes to multiple omics (data views), we don't have a single matrix of $X$ but rather we have $X_k$ where $k$ can be $1...K$, each is a separate dataset. A simple way to do the deflation of $Y$ relative to all the $X_k$ is to deflate the $Y$ for each dataset separately and then take the average of all deflation. More concretely,
 
 $$
 \Delta Y_k = Y - T_{x_k} \cdot \left( Y^T \cdot T_{x_k} \cdot (T_{x_k}^T \cdot T_{x_k})^{-1} \right)^T
 $$
 
-where
-- $Y$ is the response matrix,
-- $T_{x_k}$ is the score matrix corresponding to the $k$-th block of predictors,
-- $\Delta Y_k$ is the deflated $Y$ corresponding to the $k$-th block of predictors.
+where - $Y$ is the response matrix, - $T_{x_k}$ is the score matrix corresponding to the $k$-th block of predictors, - $\Delta Y_k$ is the deflated $Y$ corresponding to the $k$-th block of predictors.
 
 Then, the final deflated $Y$ is obtained by averaging all the individual deflations:
 
@@ -780,7 +784,7 @@ plot(scores_list[[1]][,2],scores_list[[2]][,2],
 
 ```
 
-Using mixOmics one can easily perform multiblock PLS using `block.pls` function. 
+Using mixOmics one can easily perform multiblock PLS using `block.pls` function.
 
 ```{r}
 
@@ -802,9 +806,9 @@ mixOmics::plotIndiv(block_pls_results,group = breast.TCGA$data.train$subtype,ind
 
 ```
 
-As you have noted, we have fitted a supervised regression model that uses miRNA and mRNA data to predict protein expression. Regression models are used when we have a continous response variable. How about if instead of protein expression we wanted to predict cancer subtype using miRNA and mRNA data? Cancer subtype is categorical which does not follow the assumption of the PLS. 
+As you have noted, we have fitted a supervised regression model that uses miRNA and mRNA data to predict protein expression. Regression models are used when we have a continous response variable. How about if instead of protein expression we wanted to predict cancer subtype using miRNA and mRNA data? Cancer subtype is categorical which does not follow the assumption of the PLS.
 
-Fortunately there is a simple trick that can be used to perform classification using PLS which turns PLS into PLS-DA (partial least squares discriminant analysis). 
+Fortunately there is a simple trick that can be used to perform classification using PLS which turns PLS into PLS-DA (partial least squares discriminant analysis).
 
 ## PLS-DA
 
@@ -868,43 +872,39 @@ mixOmics::plotIndiv(block_pls_results,group = breast.TCGA$data.train$subtype,ind
 
 ```
 
-Now it comes a critical question. Given that we have done regression, meaning that we can only predict continuous values, how can we transform these continuous values to our groups (categorical). 
+Now it comes a critical question. Given that we have done regression, meaning that we can only predict continuous values, how can we transform these continuous values to our groups (categorical).
 
-Imagine that we have a single test sample for which we want to predict the class. One way to do so is to project that sample (using the PLS weights) onto the PLS space (scores) and then look what groups of samples are "closer" to the projected sample. We can then assign the closer group label to that sample. 
+Imagine that we have a single test sample for which we want to predict the class. One way to do so is to project that sample (using the PLS weights) onto the PLS space (scores) and then look what groups of samples are "closer" to the projected sample. We can then assign the closer group label to that sample.
 
 We can do that following this notation:
 
-1. Compute the projection matrix $P$:
-$$
-P = X_i^T \cdot V_i
-$$
-where
-- $X_i$: the $i$-th data matrix,
-- $V_i$: the $i$-th variates matrix.
+1.  Compute the projection matrix $P$: $$
+    P = X_i^T \cdot V_i
+    $$ where
 
-2. Compute the weight matrix $W$:
-$$
-W = L_i
-$$
-where
-- $L_i$: the $i$-th loadings matrix.
+-   $X_i$: the $i$-th data matrix,
+-   $V_i$: the $i$-th variates matrix.
 
-3. Calculate the predicted scores $T_{\text{pred}}$:
-$$
-T_{\text{pred},i} = X_{\text{new},i} \cdot W \cdot (P^T \cdot W)^{-1}
-$$
-where
-- $X_{\text{new},i}$: the $i$-th new data matrix to be projected.
+2.  Compute the weight matrix $W$: $$
+    W = L_i
+    $$ where
 
-4. Normalize the predicted scores:
-$$
-T_{\text{pred},i} = T_{\text{pred},i} \cdot \text{diag}\left(\|V_{i,j}\|_2^2\right)^{-1}
-$$
-where
-- $\|V_{i,j}\|_2^2$: the squared Euclidean norm of the $j$-th column of $V_i$,
-- $\text{diag}(\cdot)$: a diagonal matrix formed from the vector of squared norms.
+-   $L_i$: the $i$-th loadings matrix.
 
-Let's try to implement that.  
+3.  Calculate the predicted scores $T_{\text{pred}}$: $$
+    T_{\text{pred},i} = X_{\text{new},i} \cdot W \cdot (P^T \cdot W)^{-1}
+    $$ where
+
+-   $X_{\text{new},i}$: the $i$-th new data matrix to be projected.
+
+4.  Normalize the predicted scores: $$
+    T_{\text{pred},i} = T_{\text{pred},i} \cdot \text{diag}\left(\|V_{i,j}\|_2^2\right)^{-1}
+    $$ where
+
+-   $\|V_{i,j}\|_2^2$: the squared Euclidean norm of the $j$-th column of $V_i$,
+-   $\text{diag}(\cdot)$: a diagonal matrix formed from the vector of squared norms.
+
+Let's try to implement that.
 
 ```{r}
 
@@ -964,10 +964,9 @@ legend("bottomleft", legend=c(levels(breast.TCGA$data.train$subtype),"projected 
     
 ```
 
-In the plot above, we can see the projection of the test datapoint to the PLS space. **Which group does it blong to?
-Can you check based on the data if your prediction is correct?**
- 
-In the similar way, we can predcit whatever number of new samples we want to. We can use distance measurement to automate the process of  making predictions.
+In the plot above, we can see the projection of the test datapoint to the PLS space. **Which group does it blong to? Can you check based on the data if your prediction is correct?**
+
+In the similar way, we can predcit whatever number of new samples we want to. We can use distance measurement to automate the process of making predictions.
 
 We now know most of ingredients of PLS, PLS-DA and multiomics data integration using PLS. Now it is time to do some coding and make some conclusions.
 
@@ -977,7 +976,7 @@ We are going to focus on supervised data integration here. We will start with cl
 
 ## DIABLO - mixOmics
 
-DIABLO is the name of the method that implements the process that we just went through. 
+DIABLO is the name of the method that implements the process that we just went through.
 
 In order to do DIABLO, similar as before we need to create a list which contain our data:
 
@@ -994,7 +993,7 @@ We need one more thing before doing DIABLO and that is the design matrix. As dis
 
 Think of `design` as a grid where each cell's value, ranging from 0 to 1, indicates the strength of the relationship between two corresponding data blocks. A value of 0 means no relationship, while 1 signifies a strong connection. When you're setting up your analysis, adjusting these values can help you emphasize or de-emphasize certain relationships, giving you the flexibility to focus on specific interactions that are of interest.
 
-Choosing the magnitude of the relationship is not straightforward. It for example can be from previous experiments or so. But generally choosing a very high value will have negative impact on the prediction ability of the model. Choosing a very low value on the other hand will cause discarding the relationship between the data blocks. Here i have randomly chosen to go with `0.2`. In practice one might want to do Sensitivity Analysis or Cross-Validation to try to optimize this value. 
+Choosing the magnitude of the relationship is not straightforward. It for example can be from previous experiments or so. But generally choosing a very high value will have negative impact on the prediction ability of the model. Choosing a very low value on the other hand will cause discarding the relationship between the data blocks. Here i have randomly chosen to go with `0.2`. In practice one might want to do Sensitivity Analysis or Cross-Validation to try to optimize this value.
 
 ```{r}
 # for square matrix filled with 0.2
@@ -1019,6 +1018,7 @@ Right now we have a model that includes two components. We can go ahead and visu
 plotIndiv(diablo.model,ind.names = F,legend = T)
 
 ```
+
 We see three separate clusters formed in the PLS space in both OMICS. That looks great! But this can be misleading. We need to be able to systematically say how good our model's performance is before making any interpretation. This means we need to check if we have fitted the data well enough. Or have we actually overfitted the data.
 
 Overfitting occurs when a model is too complex, capturing noise in the training data and making it less effective in generalizing to new, unseen data. It essentially "memorizes" the training data, leading to excellent performance on that specific dataset but poor performance on new data. To mitigate overfitting and evaluate the model's performance accurately, we employ techniques like cross-validation. Cross-validation involves partitioning the original training data set into a training set and a validation set; the model is trained on the training set and evaluated on the validation set. This process is repeated several times, with different partitions, to obtain a more generalized model performance metric. Techniques like k-fold cross-validation, where the original training set is divided into k subsets and the model is trained k times, each time using a different subset as the validation set, are commonly used. This rigorous evaluation process helps in assessing the model's ability to generalize, ensuring that it performs well not just on the training data, but on unseen data as well. For more information see [here](https://nbisweden.github.io/workshop-mlbiostatistics/session-supervise/docs/intro.html).
@@ -1034,7 +1034,7 @@ par(mfrow=c(1,1))
 plot(perf.diablo)
 ```
 
-Alright. This plots gives us a lot of information. The colors represent which distance measure has been used to assign groups to the test data. As we discussed we can use different distance measurement to predict the classes from the PLS continuous values. In practice these distances should do very similar but one might want to focus on centroid and mahalanobis distance more. 
+Alright. This plots gives us a lot of information. The colors represent which distance measure has been used to assign groups to the test data. As we discussed we can use different distance measurement to predict the classes from the PLS continuous values. In practice these distances should do very similar but one might want to focus on centroid and mahalanobis distance more.
 
 The type of the line (solid and dashed) shown error rate (ER) and balanced error rate (BER), respectively. Error Rate (ER) is the proportion of incorrect predictions made by the model over the total number of predictions, while Balanced Error Rate (BER) is the average error rates across all classes, ensuring that each class contributes equally to the overall error rate, even if the classes are imbalanced in size. In the plot, different line types allow for an easy visual comparison between these two metrics for each distance measure.
 
@@ -1042,23 +1042,20 @@ The x-axis represents the number of components included in the model, which is a
 
 In evaluating these plots, one should look for the point where both ER and BER are minimized, indicating optimal model performance. Special attention should be given to the results obtained using centroid and Mahalanobis distances, as they often provide a more nuanced and reliable classification, especially in complex multiclass scenarios or when the data distribution is not straightforward. By comparing the error rates associated with different distance measures and numbers of components, one can fine-tune the PLS-DA model for optimal classification performance.
 
+`perf` functions gives a lot of other information but probably the most useful ones are:
 
-`perf` functions gives a lot of other information but probably the most useful ones are: 
+-   auc: Averaged AUC values over the nrepeat (if requested)
+-   MajorityVote.error.rate: If more than one block, returns the error rate of the MajorityVote output
 
-* auc: Averaged AUC values over the nrepeat (if requested)
-* MajorityVote.error.rate: If more than one block, returns the error rate of the MajorityVote output
+Have a look at the help page of the function to know more.
 
-Have a look at the help page of the function to know more. 
-
-Now we know that we do actually fairly good because low error rate, meaning that the model is usable. 
+Now we know that we do actually fairly good because low error rate, meaning that the model is usable.
 
 **Can we make it better? Can you change the design matrix to different values and compare the results of cross-validation?**
 
 ### Tuning number of components
 
 I guess you also asked yourself why we should use two components. Maybe we can go higher? or maybe lower? we can try to tune this quick simply by include more components in the model and redo the cross-validation
-
-
 
 ```{r}
 diablo.model = block.splsda(X = training_data, Y = Y_training, ncomp = 5, design = design) 
@@ -1071,8 +1068,7 @@ plot(perf.diablo)
 
 ```
 
-
-This is the same plot as before but now we have more component on the x-axis. What this plot tells us that the error rate sharply decreases from ~0.3 to 0.1 just by including two components instead of one. Then we have smaller decrease from component two to three. After that the improvment is very little. So perhaps we should use  3 components or should we use five? This is where the trade-off between model complexity and performance comes into play. While adding more components can lead to a slight decrease in error rate, it also increases the complexity of the model, which can lead to more difficulty in interpretation etc. So we should go for the least complex model that gives us a reasonable error rate. 
+This is the same plot as before but now we have more component on the x-axis. What this plot tells us that the error rate sharply decreases from \~0.3 to 0.1 just by including two components instead of one. Then we have smaller decrease from component two to three. After that the improvment is very little. So perhaps we should use 3 components or should we use five? This is where the trade-off between model complexity and performance comes into play. While adding more components can lead to a slight decrease in error rate, it also increases the complexity of the model, which can lead to more difficulty in interpretation etc. So we should go for the least complex model that gives us a reasonable error rate.
 
 mixOmics gives us an automated way of selecting the best compoent. We can see mixOmics choice using:
 
@@ -1082,28 +1078,29 @@ print(perf.diablo$choice.ncomp)
 
 I this case, we are going to use majority vote and `mahalanobis.dist` so we we choose three components and redo the analysis.
 
-
 ```{r}
 ncomps <- perf.diablo$choice.ncomp$MajorityVote["Overall.BER","centroids.dist"]
 diablo.model = block.splsda(X = training_data, Y = Y_training, ncomp = ncomps, design = design) 
 ```
+
 ### Variable selection
+
 We now have a working model with a reasonably low error rate. We can use this model to extract the most important features (eg., transcripts) that gave us such a discriminatory pattern we saw in the score plots.
 
 We should do that three times in fact. One for each components. We have one set of loading for each component and for each block of data. it is quite a lot of work to go through these loadings. In the following plots, the bars have a color corresponding the group which has the maximum (`max` in contrib) of average (`mean` in method) among all the groups.
 
 ```{r}
+
 plotLoadings(diablo.model,comp=1,contrib='max',method='mean')
 plotLoadings(diablo.model,comp=2,contrib='max',method='mean')
 plotLoadings(diablo.model,comp=3,contrib='max',method='mean')
 ```
 
-Similar to what we said before, the most important variables (according to the absolute value of their coefficients) are ordered from bottom to top. One can go ahead and examine top x (eg. top 10) variables. They have the same interpretation as before:  Bars extending to the right represent features that are positively correlated with PC1, indicating that as the values of these features increase, so does the score of corresponding component Conversely, bars extending to the left suggest a negative correlation, meaning as the values of these features increase, the score of the component decreases.
+Similar to what we said before, the most important variables (according to the absolute value of their coefficients) are ordered from bottom to top. One can go ahead and examine top x (eg. top 10) variables. They have the same interpretation as before: Bars extending to the right represent features that are positively correlated with PC1, indicating that as the values of these features increase, so does the score of corresponding component Conversely, bars extending to the left suggest a negative correlation, meaning as the values of these features increase, the score of the component decreases.
 
-In this specific example we have a limited number of features so it might be feasible to do it manually. However, in practice most omics datasets are large and that will make it very difficult to choose a right cutoff to select the number of features per omics. 
+In this specific example we have a limited number of features so it might be feasible to do it manually. However, in practice most omics datasets are large and that will make it very difficult to choose a right cutoff to select the number of features per omics.
 
 Fortunately, mixOmics gives us an automated way of selecting variables using `tune.block.splsda` function. The only thing we have to do is to select the possible a grid of values for each component to test. mixOmics will then do cross-validation and try to give us the most influential variables on the model and discard the rest. This means that, given a vector of possible number of variables, the function will pinpoint the optimal subset that contributes the most to our model's predictive power, ensuring both efficiency and accuracy in our analysis.
-
 
 ```{r}
 # set grid of values for each component to test
@@ -1145,7 +1142,6 @@ selectVar(final.diablo.model, block = 'miRNA', comp = 1)$miRNA$name
 
 **what are the variables for mRNA?**
 
-
 Should we go ahead with these variables? Well, maybe! We need to do another performance check of the final model.
 
 ```{r}
@@ -1164,8 +1160,7 @@ Moving towards variable stability, it becomes essential to assess the robustness
 
 In the context of mixOmics and DIABLO, the perf function provides insights into feature stability. By examining the stability scores, we can identify which features are consistently selected across multiple iterations of the model fitting process. A higher stability score indicates that a feature is consistently chosen across different folds and repetitions, marking it as a reliable variable that contributes significantly to the model's predictive power.
 
-Let’s visualize this stability to have a clearer insight into the consistency of feature selection. We will plot the stability scores for each feature across all components and omics, giving us a comprehensive view of which features are most stable and potentially the most biologically relevant for further investigation.
-
+Let's visualize this stability to have a clearer insight into the consistency of feature selection. We will plot the stability scores for each feature across all components and omics, giving us a comprehensive view of which features are most stable and potentially the most biologically relevant for further investigation.
 
 ```{r}
  all_reps <- perf.diablo$features$stable
@@ -1209,16 +1204,16 @@ barplot(combined_stability_miRNA_comp3, main="miRNA - Component 3",
 
 ```
 
-In the plots we’ve generated, each bar represents a specific feature from the omics data, and the height of the bar corresponds to the stability score of that feature. A higher bar indicates that the feature is consistently selected across different folds and repetitions of cross-validation, suggesting it is a robust and reliable feature in the context of our model.
+In the plots we've generated, each bar represents a specific feature from the omics data, and the height of the bar corresponds to the stability score of that feature. A higher bar indicates that the feature is consistently selected across different folds and repetitions of cross-validation, suggesting it is a robust and reliable feature in the context of our model.
 
-As we examine these plots, we’re particularly interested in features with higher stability scores. These are the features that have shown to be consistently important regardless of the specific data subset used for training, indicating their pivotal role in the model's predictive capability. Each plot corresponds to a different component and omics data type, allowing us to dissect the contribution of each feature in a multi-faceted manner.
+As we examine these plots, we're particularly interested in features with higher stability scores. These are the features that have shown to be consistently important regardless of the specific data subset used for training, indicating their pivotal role in the model's predictive capability. Each plot corresponds to a different component and omics data type, allowing us to dissect the contribution of each feature in a multi-faceted manner.
 
 To interpret these plots effectively, focus on identifying features with the highest stability scores across multiple components. These features are not only influential in explaining the variance in the data but are also consistent in their performance, making them prime candidates for further biological investigation. Additionally, comparing the stability of features across different omics data types can provide insights into the integrative nature of the model, highlighting features that contribute to a comprehensive understanding of the underlying biological processes.
 
-
 ### Final model and further investiations
 
-We finally have our fantastic model ready. it gave us good performance. 
+We finally have our fantastic model ready. it gave us good performance.
+
 ```{r}
 plotIndiv(final.diablo.model, ind.names = FALSE, legend = TRUE, 
           title = 'DIABLO Sample Plots')
@@ -1229,21 +1224,20 @@ Visual inspection of the scores reveals a pronounced separation between the thre
 ```{r}
 plotVar(final.diablo.model,var.names=TRUE,legend=TRUE)
 ```
-This is Correlation Circle Plot, a visual representation that overlays the loadings (from variables)  from each omic layer. In this plot, when variables cluster near each other specially closer to the poles, it indicates a strong correlation among them, even if they originate from different omic layers. Conversely, variables positioned on opposing poles suggest a strong negative correlation. Correlation Circle Plot offers insights into feature-level interactions, revealing the  relationships among variables across different omic layers. 
+
+This is Correlation Circle Plot, a visual representation that overlays the loadings (from variables) from each omic layer. In this plot, when variables cluster near each other specially closer to the poles, it indicates a strong correlation among them, even if they originate from different omic layers. Conversely, variables positioned on opposing poles suggest a strong negative correlation. Correlation Circle Plot offers insights into feature-level interactions, revealing the relationships among variables across different omic layers.
 
 While integration has allowed us to construct this shared space and see the top variables, its true potential lies in understanding the the interactions among the variables. To go deeper into these interactions and uncover the underlying network of relationships, we can utilize mixOmics' `network` visualization and the `cim` function, offering a comprehensive view of how these features interplay across different omics layers.
-
 
 ```{r, out.width="70%", out.height="70%",fig.height=20, fig.width=20}
 par(mfrow=c(1,1))
 set.seed(123)
-network(final.diablo.model, cutoff = 0.7,
-color.node = c("mistyrose", "lightcyan"),
+mixOmics_graph<-network(final.diablo.model, cutoff = 0.5,
+color.node = c("gold", "tomato"),
 shape.node = c("rectangle", "circle"),
-color.edge = color.spectral(100),
-lty.edge = "solid", lwd.edge =  1,
-show.edge.labels = FALSE, interactive = FALSE)
-
+#color.edge = color.spectral(100),
+lty.edge = "solid", lwd.edge =  1,cex.node.name = 0.4,
+show.edge.labels = T, interactive = FALSE,graph.scale = 0.3)
 ```
 
 The above network is simply the results of calculating the correlation between the variables in the loadings space. We have selected to put the correlation cutoff on `0.7`, resulting removing the variables that have no edges (lines).
@@ -1262,9 +1256,181 @@ This dot product gives a value between -1 and 1, representing the correlation be
 
 In the network visualization, these correlation values are represented as edges connecting the nodes (variables). The strength and direction of the correlation determine the thickness and color of the edges, providing a visual representation of the relationships among variables across different omics data types. This aids in identifying groups of variables that are potentially functionally related and offers insights into the underlying biological processes.
 
-This plot can be used to group the features together, see their interaction and use that for example to do joint pathway analysis or similar. 
+This plot can be used to group the features together, see their interaction and use that for example to do joint pathway analysis or similar.
 
-There are other plots such as `circosPlot` and `cimDiablo` but they provide more or less the same information. 
+#### Clustering the relevent variables
+
+The network function by mixOmics provides convenience when it comes to visualization but in order to perform a much more flexible analysis we would need to construct the network ourselves. We do that using the provide formula above but instead of calculating the correlations across data views, we are going to calculate it both within and across datasets so we can do clustering. We are also going to put a cutoff of 0.5 correlation, so everthing with absolute correlation lower than 0.5 is set to zero.
+
+```{r}
+components <- 1:2
+
+# calculate loadings for the selected variables
+ind_cord<-mapply(function(x,y,z){cor(x[,apply(abs(z[,components]),1,sum)>0],y[,components,drop=F],use = "p")},
+  x=final.diablo.model$X[-3],y=final.diablo.model$variates[-3],z=final.diablo.model$loadings[-3])
+
+
+# calculate cross-correlation matrix
+all_loadings<-(rbind(ind_cord$miRNA,ind_cord$mRNA))
+correaltions<-all_loadings%*%t(all_loadings)
+
+# set uninteresting correlation to zero
+correaltions[abs(correaltions)<0.5] <- 0
+
+```
+
+We often need to use dissimlarity or sometime weights to perform clustering. Correlations are not a good measure to do clustering. We are going to use $\sqrt{2\times 1- r}$ formula to transform the correlations to distances.We then use gaussian similarity function ($\text{Similarity}(i, j) = \exp\left(-\frac{\text{Distance}(i, j)^2}{2\sigma^2}\right)$) to convert distances into similarities, ensuring that the similarities are positive and bounded between 0 and 1.
+
+```{r}
+# convert to distance
+correaltions <-sqrt(2 * (1 - correaltions))
+
+# convert to similarities
+sigma <- 1 
+similarity_matrix <- exp(-correaltions^2 / (2 * sigma^2))
+```
+
+Given the similarity we can now create the graph using `igraph` package and perform community detection.
+
+```{r,out.width="70%", out.height="70%",fig.height=20, fig.width=20}
+
+library(igraph)
+
+
+# Create a graph from an adjacency matrix with weighted edges
+g <- graph_from_adjacency_matrix(similarity_matrix, weighted = TRUE, diag = FALSE)
+
+# Convert the graph to an undirected graph and combine edge attributes randomly
+g <- as.undirected(g, edge.attr.comb = "random")
+
+
+
+# remove edges with zero (transformed) correlation
+g <- delete.edges(g, which(E(g)$weight ==exp(-sqrt(2 * (1 - 0))^2 / (2 * sigma^2))))
+# Remove isolated vertices (nodes with degree 0)
+Isolated = which(degree(g) == 0)
+g =delete.vertices(g, Isolated)
+
+
+# Assign group labels based on node names
+V(g)$group <- V(g)$name
+V(g)$group[V(g)$group %in% rownames(final.diablo.model$loadings$miRNA)] <- "miRNA"
+V(g)$group[V(g)$group %in% rownames(final.diablo.model$loadings$mRNA)] <- "mRNA"
+
+
+# Define node and edge colors, sizes, and other attributes
+colrs <- c("gray50", "darkgreen")
+rbPal <- colorRampPalette(c('red', 'blue'))
+E(g)$color <- rbPal(10)[as.numeric(cut(E(g)$weight, breaks = 10))]
+V(g)$color <- colrs[as.factor(V(g)$group)]
+V(g)$size <- 5
+V(g)$label.color <- "black"
+V(g)$label <- NA
+E(g)$width <- 1
+
+# do clustering
+clusters <- cluster_louvain(g)
+# Plot the graph
+plot.igraph(g,mark.groups = clusters)
+
+
+```
+
+Where we constructed a graph from an adjacency matrix and then cleaned it by removing specific edges and isolated vertices. The nodes are then labeled and categorized, and attributes are assigned to both nodes and edges for better visualization.
+
+At this stage, we want to do clustering. In graph terminology, this is called community detection. A community is a group of nodes that are more connected to each other than to nodes outside the group. There are many algorithms for community detection, but here we have selected to go with `Louvain`.
+
+The detection of communities using the Louvain algorithm involves an iterative process of optimizing modularity (we will come back to this in a second!). Modularity is a measure that quantifies the quality of an assignment of nodes to communities by comparing the density of links within communities to links between communities. In short, the Louvain algorithm starts with each node assigned to its own community. It then proceeds in two phases that are repeated iteratively. In the first phase, for each node, the algorithm evaluates the gain in modularity that would result from removing the node from its current community and placing it into a neighboring community. The node is then placed in the community for which this gain is maximized, if there is a positive gain. This process is repeated for all nodes until no further improvement in modularity can be achieved.
+
+In the second phase, the algorithm builds a new network whose nodes are the communities found in the first phase. Links between these new nodes are established by summing the weights of links between nodes in the corresponding communities of the original network. The weight of the links within the new communities is given by the total weight of the links between the nodes within those communities in the original network. The algorithm then returns to the first phase and repeats the process on this new network of communities, and these two phases are iteratively repeated until there is no further improvement in modularity.
+
+The Louvain algorithm is known for its efficiency and is capable of handling large networks. It often reveals hierarchical structures within networks by breaking down larger communities into smaller, more tightly knit groups in successive iterations.
+
+Modularity is a metric that quantifies the strength of division of a network into communities. It measures the density of links inside communities as compared to links between communities. The formula for modularity is $Q = \frac{1}{2m} \sum_{ij} \left( A_{ij} - \frac{k_i k_j}{2m} \right) \delta(c_i, c_j)$, where $A_{ij}$ is the element of the adjacency matrix (1 if there is a link between node $i$ and node $j$, and 0 otherwise), $k_i$ and $k_j$ are the degrees of nodes $i$ and $j$, $m$ is the total number of links in the network, $c_i$ and $c_j$ are the communities of the nodes, and $\delta$ is the Kronecker delta function that is 1 if $c_i = c_j$ and 0 otherwise. In simpler terms, modularity compares the number of links within communities to the number expected randomly, with higher values indicating stronger community structure. It is widely used in network science to evaluate the effectiveness of community detection algorithms, helping to identify the network's underlying structure and to understand the organization and function of complex networks.
+
+Now we have a graph, a list of clusters (communities) and a way to say how good the clustering is `modularity` but one thing remains that is how good the modularity score actually is? One way to address this, is to compare the modularity to a set of modularity scores from randomly created graph and then say how often a random graph gives better modularity compare to our original graph. This frequency is going to give us a p-value for our modularity.
+
+```{r}
+# Compute the modularity of the original network
+modularity_original <- modularity(clusters)
+
+# Generate random networks and compute their modularity
+n_random_networks <- 1000  # Number of random networks to generate
+modularities_random <- numeric(n_random_networks)
+
+for (i in 1:n_random_networks) {
+  # Generate a random network with the same size and degree distribution as the original network
+  set.seed(i)
+  g_random <- rewire(g, keeping_degseq())
+
+
+  # Compute the community structure of the random network
+  clusters_random <- cluster_louvain(g_random)
+  
+  # Compute the modularity of the random network
+  modularities_random[i] <- modularity(clusters_random)
+}
+
+hist(modularities_random,xlim = c(min(modularities_random),max(c(modularity_original+0.07,max(modularities_random)))))
+abline(v=modularity_original,col="red")
+text(x=modularity_original,y=20,"original modularity")
+```
+
+The the code above, we created 1000 random graphs and calculated modularity for each. **Do you think our communities is better than random?**
+
+We can calculate the frequency that random modularities are higher than our original modularity, giving us a p-value.
+
+```{r}
+# Compare the modularity of the original network with that of the random networks
+
+p_value <- mean(modularities_random >= modularity_original)
+
+```
+
+With a p-value of `r p_value` we are now more confident in our community analysis. Let's try to visualize these variables in the correlation plot we saw before:
+
+```{r}
+
+# Your existing plot command
+plot(all_loadings[clusters$names,], 
+     col=clusters$membership, 
+     pch=as.numeric(as.factor(V(g)$group)))
+
+# Adding a color legend for clusters
+legend("topright",                      # Position of the legend on the plot
+       legend=unique(clusters$membership), # Unique cluster IDs
+       fill=unique(clusters$membership),   # Colors corresponding to cluster IDs
+       title="Membership")               # Title of the legend
+
+legend("bottomright",                   # Position of the second legend on the plot
+       legend=levels(as.factor(V(g)$group)), # Unique group names
+       pch=unique(as.numeric(as.factor(V(g)$group))), # Point characters for each group
+       title="Data View")                   # Title of the second legend
+```
+
+The clustering makes a lot of sense. The variables with similar direction of contribution have been clusters together meaning that they have similar effect on the score pattern we observed before. We can also have a look at the scaled expression pattern:
+
+```{r,out.width="70%", out.height="70%",fig.height=20, fig.width=20}
+# Combine legends and colors
+combined_legend <- c(levels(final.diablo.model$Y), as.character(unique(clusters$membership)))
+combined_colors <- c(unique(as.numeric(final.diablo.model$Y)), unique(clusters$membership))
+
+# Define the combined legend parameter
+legend_param <- list(
+  legend = combined_legend, # Combined legend for each group
+  col = combined_colors,    # Combined color vector
+  title = "Combined Legend",# Title of the legend
+  cex = 0.8                 # Size of the legend items
+)
+
+# Call the cim() function with the combined legend parameter
+cim(cbind(final.diablo.model$X$miRNA, final.diablo.model$X$mRNA)[,clusters$names], 
+    col.sideColors = clusters$membership,
+    row.sideColors = as.numeric(final.diablo.model$Y),
+    legend = legend_param)  # Add the combined legend parameter here
+```
+
+We can see a clear expression differences between the cluster 1 and 3 specially between the group Basal and LumA. From this step one can go forward with doing pathway analysis or directly interpret the results. We are going to move on to another important functionality of mixOmics
 
 #### Use the model to predict new cases
 
@@ -1275,7 +1441,7 @@ test_data = list(miRNA = breast.TCGA$data.test$mirna,
             mRNA = breast.TCGA$data.test$mrna)
 
 
-predicted_class_test <- predict(final.diablo.model,test_data)
+predicted_class_test <- mixOmics:::predict.mint.splsda(final.diablo.model,test_data)
 
 
 pred_classes_test<-predicted_class_test$WeightedVote$centroids.dist[,3]
@@ -1304,7 +1470,7 @@ This error rate is very good. So our model performs reasonably.
 
 We do integration for different purposes. Here we used both for prediction of cancer suptypes and also for clustering the variables. In the case of the cancer suptypes prediction, we might want to ask the question if integration is neccsary or not?
 
-We are going to test this by first doing separate PLSDA on each omics and compare the performance to the integrated one. So we are trying to do everything as similar as possible and check the error rates. 
+We are going to test this by first doing separate PLSDA on each omics and compare the performance to the integrated one. So we are trying to do everything as similar as possible and check the error rates.
 
 ```{r}
 miRNA_plsda <- splsda(training_data$miRNA,Y_training,ncomp = 5)
@@ -1406,5 +1572,3 @@ What do you think? Did the integration improve anything?
 ## Integrative regression
 
 The regression-based integrative analysis can also be performed as demonstrated above. However, unfortunately mixOmics does not provide functions to perform cross-validation and tuning on `block.pls` results. Most of the required measurements can be implement from scratch but we are going to skip it as it goes beyond the purpose of this document.
-
-
