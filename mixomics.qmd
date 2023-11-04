@@ -1842,6 +1842,4 @@ What do you think? Did the integration improve anything?
 
 The regression-based integrative analysis can also be performed as demonstrated above. However, unfortunately `mixOmics` does not provide functions to perform cross-validation and tuning on `block.pls` results. Most of the required measurements can be implement from scratch but we are going to skip it as it goes beyond the purpose of this document.
 
-```{r}
 
-```

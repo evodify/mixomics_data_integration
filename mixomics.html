@@ -159,7 +159,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#tuning-number-of-components" id="toc-tuning-number-of-components" class="nav-link" data-scroll-target="#tuning-number-of-components">Tuning number of components</a></li>
   <li><a href="#variable-selection" id="toc-variable-selection" class="nav-link" data-scroll-target="#variable-selection">Variable selection</a></li>
   </ul></li>
-  <li><a href="#final-model-and-further-investiations" id="toc-final-model-and-further-investiations" class="nav-link" data-scroll-target="#final-model-and-further-investiations">Final model and further investiations</a>
+  <li><a href="#final-model-and-further-investigations" id="toc-final-model-and-further-investigations" class="nav-link" data-scroll-target="#final-model-and-further-investigations">Final model and further investigations</a>
   <ul class="collapse">
   <li><a href="#network-visualization" id="toc-network-visualization" class="nav-link" data-scroll-target="#network-visualization">Network visualization</a></li>
   <li><a href="#clustering-the-relevant-variables" id="toc-clustering-the-relevant-variables" class="nav-link" data-scroll-target="#clustering-the-relevant-variables">Clustering the relevant variables</a></li>
@@ -272,9 +272,9 @@ A^T A = V \Sigma^T U^T U \Sigma V^T = V \Sigma^2 V^T\]</span></p>
 <section id="pca-in-r" class="level2">
 <h2 class="anchored" data-anchor-id="pca-in-r">PCA in R</h2>
 <p>To run PCA in R using SVD we center our data and use the <code>svd</code> function.</p>
-<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-5_f4901c8f15a2c56e31a70806050ce99d">
+<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-5_efa1b0d29be88b232dd4047b3f729437">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># center the data</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_centered_mirna <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna,<span class="at">center =</span> <span class="cn">TRUE</span>,<span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_centered_mirna <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna, <span class="at">center =</span> <span class="cn">TRUE</span>,<span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># do SVD</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>svd_mirna <span class="ot">&lt;-</span> <span class="fu">svd</span>(data_centered_mirna)</span>
@@ -450,7 +450,7 @@ X = X-T_x(X^TT_U(T^T_UT_U)^{-1})^T
 </section>
 <section id="generalized-canonical-correlation-analysis" class="level1">
 <h1>Generalized Canonical Correlation Analysis</h1>
-<p>Generalized Canonical Correlation Analysis (GCCA) is an extention of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R.</p>
+<p>Generalized Canonical Correlation Analysis (GCCA) is an extension of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R.</p>
 <p>We talked about SVD for PCA and CCA. While SVD provides a direct and efficient means to compute canonical correlations and vectors, there are alternative numerical approaches, such as the <strong>power method</strong>, which can be particularly useful for iterative computations, giving us a lot of flexibility in terms of applying modifications to the method.</p>
 <section id="power-method-generic" class="level3">
 <h3 class="anchored" data-anchor-id="power-method-generic">Power Method (generic)</h3>
@@ -1788,8 +1788,8 @@ $mRNA
 <p>To interpret these plots effectively, focus on identifying features with the highest stability scores across multiple components. These features are not only influential in explaining the variance in the data but are also consistent in their performance, making them prime candidates for further biological investigation. Additionally, comparing the stability of features across different omics data types can provide insights into the integrative nature of the model, highlighting features that contribute to a comprehensive understanding of the underlying biological processes.</p>
 </section>
 </section>
-<section id="final-model-and-further-investiations" class="level2">
-<h2 class="anchored" data-anchor-id="final-model-and-further-investiations">Final model and further investiations</h2>
+<section id="final-model-and-further-investigations" class="level2">
+<h2 class="anchored" data-anchor-id="final-model-and-further-investigations">Final model and further investigations</h2>
 <p>We finally have our fantastic model ready. It gives us good performance.</p>
 <div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-40_9ae71b436b266989ab7375b5a1d9c0b5">
 <div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotIndiv</span>(final.diablo.model, <span class="at">ind.names =</span> <span class="cn">FALSE</span>, </span>
