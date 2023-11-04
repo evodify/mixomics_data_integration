@@ -76,7 +76,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Matrix Decomposition for Data Integration</h1>
+            <p class="subtitle lead">Detailed Version</p>
+                      </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Payam Emami </p>
+            </div>
+    </div>
+      
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
   <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="2">
     <h2 id="toc-title">Table of contents</h2>
@@ -91,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#pca-with-mixomics" id="toc-pca-with-mixomics" class="nav-link" data-scroll-target="#pca-with-mixomics">PCA with <code>mixOmics</code></a></li>
   <li><a href="#limitations-with-more-data-sets" id="toc-limitations-with-more-data-sets" class="nav-link" data-scroll-target="#limitations-with-more-data-sets">Limitations with more data sets</a></li>
   </ul></li>
-  <li><a href="#cca-two-datasets" id="toc-cca-two-datasets" class="nav-link" data-scroll-target="#cca-two-datasets">CCA (two datasets)</a>
+  <li><a href="#cca-two-data-sets" id="toc-cca-two-data-sets" class="nav-link" data-scroll-target="#cca-two-data-sets">CCA (two data sets)</a>
   <ul>
   <li><a href="#mathematical-foundations" id="toc-mathematical-foundations" class="nav-link" data-scroll-target="#mathematical-foundations">Mathematical Foundations</a></li>
   <li><a href="#cca-in-r" id="toc-cca-in-r" class="nav-link" data-scroll-target="#cca-in-r">CCA in R</a></li>
@@ -136,7 +159,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#tuning-number-of-components" id="toc-tuning-number-of-components" class="nav-link" data-scroll-target="#tuning-number-of-components">Tuning number of components</a></li>
   <li><a href="#variable-selection" id="toc-variable-selection" class="nav-link" data-scroll-target="#variable-selection">Variable selection</a></li>
   </ul></li>
-  <li><a href="#final-model-and-further-investiations" id="toc-final-model-and-further-investiations" class="nav-link" data-scroll-target="#final-model-and-further-investiations">Final model and further investiations</a>
+  <li><a href="#final-model-and-further-investigations" id="toc-final-model-and-further-investigations" class="nav-link" data-scroll-target="#final-model-and-further-investigations">Final model and further investigations</a>
   <ul class="collapse">
   <li><a href="#network-visualization" id="toc-network-visualization" class="nav-link" data-scroll-target="#network-visualization">Network visualization</a></li>
   <li><a href="#clustering-the-relevant-variables" id="toc-clustering-the-relevant-variables" class="nav-link" data-scroll-target="#clustering-the-relevant-variables">Clustering the relevant variables</a></li>
@@ -148,30 +171,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul>
 </nav>
 </div>
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Matrix Decomposition for Data Integration</h1>
-</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
 
 
 
-<div class="quarto-title-meta">
-
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Payam Emami </p>
-          </div>
-  </div>
-    
-  
-    
-  </div>
-  
-
-</header>
 
 <p>Set up the environment</p>
 <div class="cell" data-hash="mixomics_cache/html/unnamed-chunk-2_e065ccbe17dac38d290e07e9379f1dea">
@@ -269,9 +272,9 @@ A^T A = V \Sigma^T U^T U \Sigma V^T = V \Sigma^2 V^T\]</span></p>
 <section id="pca-in-r" class="level2">
 <h2 class="anchored" data-anchor-id="pca-in-r">PCA in R</h2>
 <p>To run PCA in R using SVD we center our data and use the <code>svd</code> function.</p>
-<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-5_f4901c8f15a2c56e31a70806050ce99d">
+<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-5_efa1b0d29be88b232dd4047b3f729437">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># center the data</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_centered_mirna <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna,<span class="at">center =</span> <span class="cn">TRUE</span>,<span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_centered_mirna <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna, <span class="at">center =</span> <span class="cn">TRUE</span>,<span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># do SVD</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>svd_mirna <span class="ot">&lt;-</span> <span class="fu">svd</span>(data_centered_mirna)</span>
@@ -351,8 +354,8 @@ A^T A = V \Sigma^T U^T U \Sigma V^T = V \Sigma^2 V^T\]</span></p>
 <p>While it might be tempting to merge multiple data sets into one and proceed with PCA, this approach has several challenges and limitations. Different data sets can have variations in terms of units, scales, and data collection methods. Simply merging them without addressing these issues can lead to misleading PCA results, where the observed variance is more a reflection of the data sets’ inconsistencies rather than underlying biological patterns. In addition, when data sets are collected at different times, locations, or under different conditions, batch effects can occur. These systematic non-biological differences can confound the PCA results, making it difficult to detect true patterns and relationships within the data. This leads us to multi-omics analysis, where techniques like Canonical Correlation Analysis (CCA) offer ways to detect correlated patterns between two or more omics data sets, and provide a more holistic view of the underlying biological processes.</p>
 </section>
 </section>
-<section id="cca-two-datasets" class="level1">
-<h1>CCA (two datasets)</h1>
+<section id="cca-two-data-sets" class="level1">
+<h1>CCA (two data sets)</h1>
 <p>Canonical Correlation Analysis, CCA, is similar to PCA with the capability to analyze multivariate correlations between two data sets. While PCA focuses on maximizing variance within a single dataset, CCA identifies linear combinations of variables from two data sets that are maximally correlated. It provides pairs of canonical variables and their associated canonical correlations, giving insights into the shared structure and relationships between the data sets. This is particularly suited in multi-omics studies, where understanding the interplay between different types of biological data is crucial.</p>
 <section id="mathematical-foundations" class="level2">
 <h2 class="anchored" data-anchor-id="mathematical-foundations">Mathematical Foundations</h2>
@@ -447,7 +450,7 @@ X = X-T_x(X^TT_U(T^T_UT_U)^{-1})^T
 </section>
 <section id="generalized-canonical-correlation-analysis" class="level1">
 <h1>Generalized Canonical Correlation Analysis</h1>
-<p>Generalized Canonical Correlation Analysis (GCCA) is an extention of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R.</p>
+<p>Generalized Canonical Correlation Analysis (GCCA) is an extension of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R.</p>
 <p>We talked about SVD for PCA and CCA. While SVD provides a direct and efficient means to compute canonical correlations and vectors, there are alternative numerical approaches, such as the <strong>power method</strong>, which can be particularly useful for iterative computations, giving us a lot of flexibility in terms of applying modifications to the method.</p>
 <section id="power-method-generic" class="level3">
 <h3 class="anchored" data-anchor-id="power-method-generic">Power Method (generic)</h3>
@@ -1785,8 +1788,8 @@ $mRNA
 <p>To interpret these plots effectively, focus on identifying features with the highest stability scores across multiple components. These features are not only influential in explaining the variance in the data but are also consistent in their performance, making them prime candidates for further biological investigation. Additionally, comparing the stability of features across different omics data types can provide insights into the integrative nature of the model, highlighting features that contribute to a comprehensive understanding of the underlying biological processes.</p>
 </section>
 </section>
-<section id="final-model-and-further-investiations" class="level2">
-<h2 class="anchored" data-anchor-id="final-model-and-further-investiations">Final model and further investiations</h2>
+<section id="final-model-and-further-investigations" class="level2">
+<h2 class="anchored" data-anchor-id="final-model-and-further-investigations">Final model and further investigations</h2>
 <p>We finally have our fantastic model ready. It gives us good performance.</p>
 <div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-40_9ae71b436b266989ab7375b5a1d9c0b5">
 <div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotIndiv</span>(final.diablo.model, <span class="at">ind.names =</span> <span class="cn">FALSE</span>, </span>
@@ -1802,12 +1805,12 @@ $mRNA
 </div>
 </div>
 <p>Visual inspection of the scores reveals a pronounced separation between the three cancer subtypes, suggesting that our selected variables hold significant discriminatory power. We can have a look at how these variables influence the shared space:</p>
-<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-41_8331208e0669b70ea932ab2fc4001cdc">
+<div class="cell" data-layout-align="center" data-hash="mixomics_cache/html/unnamed-chunk-41_2c9e75783ca6548d5ef5960ea8f9fcf9">
 <div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotVar</span>(final.diablo.model, <span class="at">var.names=</span><span class="cn">TRUE</span>, <span class="at">legend=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="mixomics_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="960"></p>
+<p><img src="mixomics_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="576"></p>
 </figure>
 </div>
 </div>

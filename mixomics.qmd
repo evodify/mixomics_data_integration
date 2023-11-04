@@ -8,6 +8,8 @@ format:
     toc-depth: 4
     toc-expand: 2
     editor: visual
+title-block-banner: true
+subtitle: Detailed Version
 editor_options: 
   chunk_output_type: console
 ---
@@ -123,13 +125,14 @@ str(breast.TCGA)
 ## PCA in R
 
 To run PCA in R using SVD we center our data and use the `svd` function.
+
 ```{r}
 #| fig-width: 6
 #| fig-height: 6
 #| fig-align: center
 
 # center the data
-data_centered_mirna <- scale(breast.TCGA$data.train$mirna,center = TRUE,scale = FALSE)
+data_centered_mirna <- scale(breast.TCGA$data.train$mirna, center = TRUE,scale = FALSE)
 
 # do SVD
 svd_mirna <- svd(data_centered_mirna)
@@ -142,6 +145,7 @@ plot(calculated_scores[,1:2],xlab="PC1",ylab="PC2",col=breast.TCGA$data.train$su
 ```
 
 This gives us identical results as the ones obtained via using standard `prcomp` function.
+
 ```{r}
 #| fig-width: 6
 #| fig-height: 6
@@ -155,6 +159,7 @@ plot(pca_prcomp$x[,1:2], xlab="PC1", ylab="PC2", col=breast.TCGA$data.train$subt
 ```
 
 ## PCA with `mixOmics`
+
 In practice there are more specialized packages that can be used to do PCA. `mixOmics` implements a very powerful PCA method that provide us not only with standard PCA but also with extra advantages such as handling of missing value, plotting and taking into account repeated measurements.
 
 ```{r}
@@ -202,7 +207,7 @@ Score plot together with loading give us powerful tool to investigate patterns i
 
 While it might be tempting to merge multiple data sets into one and proceed with PCA, this approach has several challenges and limitations. Different data sets can have variations in terms of units, scales, and data collection methods. Simply merging them without addressing these issues can lead to misleading PCA results, where the observed variance is more a reflection of the data sets' inconsistencies rather than underlying biological patterns. In addition, when data sets are collected at different times, locations, or under different conditions, batch effects can occur. These systematic non-biological differences can confound the PCA results, making it difficult to detect true patterns and relationships within the data. This leads us to multi-omics analysis, where techniques like Canonical Correlation Analysis (CCA) offer ways to detect correlated patterns between two or more omics data sets, and provide a more holistic view of the underlying biological processes.
 
-# CCA (two datasets)
+# CCA (two data sets)
 
 Canonical Correlation Analysis, CCA, is similar to PCA with the capability to analyze multivariate correlations between two data sets. While PCA focuses on maximizing variance within a single dataset, CCA identifies linear combinations of variables from two data sets that are maximally correlated. It provides pairs of canonical variables and their associated canonical correlations, giving insights into the shared structure and relationships between the data sets. This is particularly suited in multi-omics studies, where understanding the interplay between different types of biological data is crucial.
 
@@ -216,15 +221,13 @@ $$
 
 where $a$ and $b$ are the canonical weights, and $\rho$ is the canonical correlation.
 
-The cross-covariance matrix between $X$ and $Y$ plays a central role in calculating CCA weights. We compute it and then apply SVD to find the weights and correlations. The process is similar to performing SVD in PCA but extends to exploring relationships between two data sets.
-$$
+The cross-covariance matrix between $X$ and $Y$ plays a central role in calculating CCA weights. We compute it and then apply SVD to find the weights and correlations. The process is similar to performing SVD in PCA but extends to exploring relationships between two data sets. $$
 \text{SVD}(\Sigma_{XY}) = U \Lambda V^T
 $$
 
 where $\Sigma_{XY}$ is the cross-covariance matrix, $U$ and $V$ are the canonical weights for $X$ and $Y$, and $\Lambda$ contains the canonical correlations.
 
-We can now find the canonical variables:
-$$
+We can now find the canonical variables: $$
 T_x = XU
 $$ $$
 T_y = YV$$
@@ -235,11 +238,12 @@ $$
 X = X-T_x(X^TT_U(T^T_UT_U)^{-1})^T
 $$ and for $Y$
 
-$$Y = Y-T_y(Y^TT_U(T^T_UT_U)^{-1})^T $$
-The process is repeated to extract additional pairs of canonical variables.
+$$Y = Y-T_y(Y^TT_U(T^T_UT_U)^{-1})^T $$ The process is repeated to extract additional pairs of canonical variables.
 
 ## CCA in R
+
 Let's have a look at how we can derive this in R using miRNA and mRNA data
+
 ```{r}
 #| fig-width: 14
 #| fig-height: 12
@@ -304,11 +308,11 @@ The plot above clearly shows that we ended up having a shared pattern in `l1` (f
 
 We are going to explore the loadings later when we explain multiomics CCA i.e. GCCA but for now remember that in the context of CCA, loadings play a role similar to that in PCA, yet they have a distinct interpretation. Similar to PCA, where loadings indicate the contribution of each original variable to the principal components, in CCA, the loadings show the contribution of each variable to the canonical variables. However, the difference lies in their meaning. While PCA loadings represent the contribution to the variance within a single data set, CCA loadings show the contribution to the correlation between two datasets.
 
-So far we have been going through CCA using two data sets. Can it be expaned to more data sets? Yes, via Generalized Canonical Correlation Analysis. 
+So far we have been going through CCA using two data sets. Can it be expaned to more data sets? Yes, via Generalized Canonical Correlation Analysis.
 
 # Generalized Canonical Correlation Analysis
 
-Generalized Canonical Correlation Analysis (GCCA) is an extention of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R. 
+Generalized Canonical Correlation Analysis (GCCA) is an extension of CCA to multiple data sets. We are going to introduce a few more concepts before running GCCA in R.
 
 We talked about SVD for PCA and CCA. While SVD provides a direct and efficient means to compute canonical correlations and vectors, there are alternative numerical approaches, such as the **power method**, which can be particularly useful for iterative computations, giving us a lot of flexibility in terms of applying modifications to the method.
 
@@ -376,6 +380,7 @@ Going back to CCA, the power method can be used to find the canonical correlatio
 The loadings are updated by projecting each dataset onto the scores of the other dataset, capturing the shared information and maximizing the correlation between the datasets. The convergence criterion ensures that the iterative process stops when the loadings become stable, indicating that the canonical variables that maximize the correlation between the datasets have been found. The deflation step is similar to that of SVD.
 
 #### Implementation in R
+
 ```{r}
 #| fig-width: 14
 #| fig-height: 12
@@ -469,8 +474,7 @@ Now that we see that we can obtain similar results (remember the direction of ax
 
 In the previous algorithm we had only two data sets. In the updating step we perform a simple regression of dataset $X$ and the scores of dataset $Y$ and vice versa.
 
-$$u_{k+1} = X^T s_{Y,k}, \quad v_{k+1} = Y^T s_{X,k}.$$
-     A simple solution to address the integration using multiple data sets is to estimate the loading based the regression on the joint scores. This means that given dataset $X$, $Y$ and $Z$, for calculate for scores, we are going to take one of the data sets and regress it against the weighted sum of scores from the two other data set. So we are going to do:
+$$u_{k+1} = X^T s_{Y,k}, \quad v_{k+1} = Y^T s_{X,k}.$$ A simple solution to address the integration using multiple data sets is to estimate the loading based the regression on the joint scores. This means that given dataset $X$, $Y$ and $Z$, for calculate for scores, we are going to take one of the data sets and regress it against the weighted sum of scores from the two other data set. So we are going to do:
 
 $$s_X = X^T (w_Y \cdot s_Y + w_Z \cdot s_Z),$$
 
@@ -631,17 +635,15 @@ print(gcc_three_datasets$design)
 `keepX` is used in refining GCCA analysis by controlling number of variables to retain in each block of data during the analysis. `keepX` is like a filter that helps you keep only the most valuable variables, enhancing the clarity and focus of your analysis. You provide a vector of integers to `keepX`, each integer corresponding to the number of variables you want to retain from each data block. It is a balancing act - retaining more variables can capture complex patterns but might also introduce noise. On the other hand, keeping fewer variables simplifies the model but might miss out on nuanced interactions. Adjusting `keepX` is a practical step in iterative model refinement, ensuring that your analysis is both robust and focused, honing in on the most informative variables to answer your specific research questions.
 
 ::: {#exr-sgcca}
-
 ### Design and keepX
 
-1. Can you construct a design matrix to specify relationships between mRNA, miRNA and protein data set? Set the relationship between mRNA and protein to 0.9, between mRNA and miRNA to 0.8 and between protein and miRNA to 0.7. 
+1.  Can you construct a design matrix to specify relationships between mRNA, miRNA and protein data set? Set the relationship between mRNA and protein to 0.9, between mRNA and miRNA to 0.8 and between protein and miRNA to 0.7.
 
-2. Retain only 10 variables for each omics. 
+2.  Retain only 10 variables for each omics.
 
-3. Run the GCCA and plot the data and loadings. 
+3.  Run the GCCA and plot the data and loadings.
 
-4. Compare the results to previous GCCA analysis. Any differences?
-
+4.  Compare the results to previous GCCA analysis. Any differences?
 :::
 
 ```{r}
@@ -669,7 +671,6 @@ mixOmics::plotLoadings(gcc_three_datasets, comp = 1, ndisplay = 10, size.title =
 
 ```
 
-
 For us, it is time to switch to supervised data integration using `mixOmics`.
 
 # Supervised integration
@@ -691,19 +692,19 @@ X = T P^T + E
 $$ $$
 Y = U Q^T + F$$
 
-where: 
+where:
 
-- $X$ is the matrix of predictor variables, 
-- $Y$ is the matrix of response variables, 
-- $T$ and $U$ are matrices of scores representing the latent variables, 
-- $P$ and $Q$ are matrices of loadings, 
-- $E$ and $F$ are matrices of residuals.
+-   $X$ is the matrix of predictor variables,
+-   $Y$ is the matrix of response variables,
+-   $T$ and $U$ are matrices of scores representing the latent variables,
+-   $P$ and $Q$ are matrices of loadings,
+-   $E$ and $F$ are matrices of residuals.
 
 More specifically, there are two main differences between CCA and PLS when it comes to underlining equations. In CCA, we first calculate each covariance matrix for each dataset and then continue with the deflation. In contrast, in PLS, we need to calculate the cross covariance between $X$ and $Y$ followed by SVD and deflation.
 
 The second difference is the deflation procedure itself. The main difference lies in the scores used for deflation. In CCA, each block is deflated by its own scores, while in PLS, both blocks are deflated by the $X$ scores, ensuring that the shared information captured is based on the covariance between $X$ and $Y$.
 
-In CCA we have: 
+In CCA we have:
 
 $$
 X' = X - T_X (X^T T_X) (T_X^T T_X)^{-1}
@@ -711,9 +712,9 @@ $$ $$
 Y' = Y - T_Y (Y^T T_Y) (T_Y^T T_Y)^{-1}
 $$
 
-where: 
+where:
 
-- $T_Y$ is the matrix of scores associated with $Y$.
+-   $T_Y$ is the matrix of scores associated with $Y$.
 
 In PLS deflation:
 
@@ -721,12 +722,12 @@ $$X' = X - T_X (X^T T_X) (T_X^T T_X)^{-1}$$
 
 $$Y' = Y - T_X (Y^T T_X) (T_X^T T_X)^{-1}$$
 
-where: 
+where:
 
-- $X'$ and $Y'$ are the deflated $X$ and $Y$ blocks respectively. 
-- $T_X$ is the matrix of scores associated with $X$. 
-- The operation $X^T T_X$ and $Y^T T_X$ calculates the projection of $X$ and $Y$ on the scores $T_X$. 
-- The term $(T_X^T T_X)^{-1}$ is the inverse of the matrix resulting from the multiplication of $T_X^T$ and $T_X$, used for normalization.
+-   $X'$ and $Y'$ are the deflated $X$ and $Y$ blocks respectively.
+-   $T_X$ is the matrix of scores associated with $X$.
+-   The operation $X^T T_X$ and $Y^T T_X$ calculates the projection of $X$ and $Y$ on the scores $T_X$.
+-   The term $(T_X^T T_X)^{-1}$ is the inverse of the matrix resulting from the multiplication of $T_X^T$ and $T_X$, used for normalization.
 
 To see this in practice we will change our R code and do PLS instead of CCA. In the following example, we are going to using our mirna data as X and protein as Y. It is important to note that one of the most amazing properties of PLS is the capability to regress on multivariate outcome in contrast to ordinary regression which often involves a single outcome.
 
@@ -826,20 +827,20 @@ $$
 \Delta Y_k = Y - T_{x_k} \cdot \left( Y^T \cdot T_{x_k} \cdot (T_{x_k}^T \cdot T_{x_k})^{-1} \right)^T
 $$
 
-where 
+where
 
-- $Y$ is the response matrix, 
-- $T_{x_k}$ is the score matrix corresponding to the $k$-th block of predictors, 
-- $\Delta Y_k$ is the deflated $Y$ corresponding to the $k$-th block of predictors.
+-   $Y$ is the response matrix,
+-   $T_{x_k}$ is the score matrix corresponding to the $k$-th block of predictors,
+-   $\Delta Y_k$ is the deflated $Y$ corresponding to the $k$-th block of predictors.
 
-Then, the final deflated $Y$ is obtained by averaging all the individual deflations:
-$$
+Then, the final deflated $Y$ is obtained by averaging all the individual deflations: $$
 \Delta Y_{\text{final}} = \frac{1}{K} \sum_{k=1}^K \Delta Y_k
 $$
 
 This ensures that the deflation of $Y$ takes into account the information captured in all blocks of predictors, leading to a more comprehensive and integrative analysis when dealing with multiple omics or data views.
 
 We can do a simple change to our previous code to do that.
+
 ```{r}
 #| fig-width: 14
 #| fig-height: 8
@@ -977,6 +978,7 @@ for $i = 1, 2, \ldots, n$ and $j = 1, 2, \ldots, K$.
 Each column of $D$ corresponds to one level of the categorical variable $Y$, and each row corresponds to an observation. The elements of $D$ are binary indicators, with a 1 indicating the presence of the corresponding level for that observation and 0 indicating the absence.
 
 Here is a code to do that!
+
 ```{r}
 # create a factor variable
 Y <- breast.TCGA$data.train$subtype
@@ -998,6 +1000,7 @@ print(dummy_matrix)
 ```
 
 We can now do PLS on this matrix which is equal to doing PLS-DA.
+
 ```{r}
 #| fig-width: 14
 #| fig-height: 7
@@ -1061,6 +1064,7 @@ We can do that following this notation:
 -   $\text{diag}(\cdot)$: a diagonal matrix formed from the vector of squared norms.
 
 Let's try to implement that.
+
 ```{r}
 #| fig-align: center
 
@@ -1120,14 +1124,12 @@ legend("bottomleft", legend=c(levels(breast.TCGA$data.train$subtype), "projected
 ```
 
 ::: {exr-pls}
-
 ### PLS-DA
 
 In the plot above, we can see the projection of the test data point to the PLS space.
 
-1. Which group does it belong to?
-2. Can you check based on the data if your prediction is correct?
-
+1.  Which group does it belong to?
+2.  Can you check based on the data if your prediction is correct?
 :::
 
 ```{r}
@@ -1146,10 +1148,9 @@ print(breast.TCGA$data.test$subtype[1])
 
 ```
 
-
 In the similar way, we can predict whatever number of new samples we want to. We can use distance measurement to automate the process of making predictions.
 
-We now know most of ingredients of PLS, PLS-DA and multiomics data integration using PLS. Now we can see how these methods are used as part of the `mixOmics` package. 
+We now know most of ingredients of PLS, PLS-DA and multiomics data integration using PLS. Now we can see how these methods are used as part of the `mixOmics` package.
 
 # Supervised data integration using `mixOmics`
 
@@ -1188,12 +1189,14 @@ print(design)
 ```
 
 We can proceed with running the analysis
+
 ```{r}
 library(mixOmics)
 diablo.model = block.splsda(X = training_data, Y = Y_training, ncomp = 2, design = design) 
 ```
 
 Right now we have a model that includes two components. We can go ahead and visualize the PLS scores.
+
 ```{r}
 #| fig-align: center
 
@@ -1244,7 +1247,6 @@ Have a look at the help page of the function to know more.
 Now we know that we do actually fairly good because low error rate, meaning that the model is usable.
 
 ::: {#exr-diablo}
-
 ## DIABLO
 
 Can we make the above model better? Try changing the design matrix to different values, e.g. 0.8 or 0.1 and compare the results of cross-validation.
@@ -1280,7 +1282,6 @@ plot(perf.diablo)
 # and selecting high values of 0.8 yields higher ER and BER with 2 components. 
 ```
 
-
 ### Tuning number of components
 
 I guess you also asked yourself why we should use two components. Maybe we can go higher? Or lower? We can try to tune number of components by simply including more components in the model and redoing the cross-validation.
@@ -1312,6 +1313,7 @@ print(perf.diablo$choice.ncomp)
 ```
 
 I this case, we are going to use majority vote and `mahalanobis.dist` so we we choose three components and redo the analysis.
+
 ```{r}
 ncomps <- perf.diablo$choice.ncomp$MajorityVote["Overall.BER","centroids.dist"]
 diablo.model = block.splsda(X = training_data, 
@@ -1380,6 +1382,7 @@ selectVar(final.diablo.model, block = 'miRNA', comp = 1)$miRNA$name
 ```
 
 What are the variables for mRNA?
+
 ```{r}
 #| eval: false
 #| code-fold: true
@@ -1388,7 +1391,6 @@ What are the variables for mRNA?
 selectVar(final.diablo.model, block = 'mRNA', comp = 1)$miRNA$name 
 
 ```
-
 
 Should we go ahead with these variables? Well, maybe! We need to do another performance check of the final model.
 
@@ -1456,14 +1458,13 @@ barplot(combined_stability_miRNA_comp3, main="miRNA - Component 3",
 
 ```
 
-
 In the above plots each bar represents a specific feature from the omics data, and the height of the bar corresponds to the stability score of that feature. A higher bar indicates that the feature is consistently selected across different folds and repetitions of cross-validation, suggesting it is a robust and reliable feature in the context of our model.
 
 As we examine these plots, we are particularly interested in features with higher stability scores. These are the features that have shown to be consistently important regardless of the specific data subset used for training, indicating their pivotal role in the model's predictive capability. Each plot corresponds to a different component and omics data type, allowing us to dissect the contribution of each feature in a multi-faceted manner.
 
 To interpret these plots effectively, focus on identifying features with the highest stability scores across multiple components. These features are not only influential in explaining the variance in the data but are also consistent in their performance, making them prime candidates for further biological investigation. Additionally, comparing the stability of features across different omics data types can provide insights into the integrative nature of the model, highlighting features that contribute to a comprehensive understanding of the underlying biological processes.
 
-## Final model and further investiations
+## Final model and further investigations
 
 We finally have our fantastic model ready. It gives us good performance.
 
@@ -1479,13 +1480,13 @@ Visual inspection of the scores reveals a pronounced separation between the thre
 
 ```{r}
 #| fig-align: center
-#| fig-width: 10
+#| fig-width: 6
 plotVar(final.diablo.model, var.names=TRUE, legend=TRUE)
 ```
 
 This is **Correlation Circle Plot**, a visual representation that overlays the loadings (from variables) from each omic layer. In this plot, when variables cluster near each other specially closer to the poles, it indicates a strong correlation among them, even if they originate from different omic layers. Conversely, variables positioned on opposing poles suggest a strong negative correlation. Correlation Circle Plot offers insights into feature-level interactions, revealing the relationships among variables across different omic layers.
 
-### Network visualization 
+### Network visualization
 
 While integration has allowed us to construct this shared space and see the top variables, its true potential lies in understanding the the interactions among the variables. To go deeper into these interactions and uncover the underlying network of relationships, we can utilize `mixOmics` `network` visualization and the `cim` function, offering a comprehensive view of how these features interplay across different omics layers.
 
@@ -1691,6 +1692,7 @@ We can see a clear expression differences between the cluster 1 and 3 specially 
 ### Predicting new cases
 
 Now that we have the model, we can use it to predict new data (unseen by the model)
+
 ```{r}
 #| collapse: true
 
@@ -1840,7 +1842,4 @@ What do you think? Did the integration improve anything?
 
 The regression-based integrative analysis can also be performed as demonstrated above. However, unfortunately `mixOmics` does not provide functions to perform cross-validation and tuning on `block.pls` results. Most of the required measurements can be implement from scratch but we are going to skip it as it goes beyond the purpose of this document.
 
-```{r}
-
-```
 

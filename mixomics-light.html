@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Payam Emami">
+
+<title>Matrix Decomposition for Data Integration</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="mixomics-light_files/libs/clipboard/clipboard.min.js"></script>
+<script src="mixomics-light_files/libs/quarto-html/quarto.js"></script>
+<script src="mixomics-light_files/libs/quarto-html/popper.min.js"></script>
+<script src="mixomics-light_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="mixomics-light_files/libs/quarto-html/anchor.min.js"></script>
+<link href="mixomics-light_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="mixomics-light_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="mixomics-light_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="mixomics-light_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="mixomics-light_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body>
+
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Matrix Decomposition for Data Integration</h1>
+            <p class="subtitle lead">Light Version</p>
+                      </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Payam Emami </p>
+            </div>
+    </div>
+      
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="3">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">Data</a></li>
+  <li><a href="#pca-one-data-set" id="toc-pca-one-data-set" class="nav-link" data-scroll-target="#pca-one-data-set">PCA (one data set)</a>
+  <ul>
+  <li><a href="#pca-with-mixomics" id="toc-pca-with-mixomics" class="nav-link" data-scroll-target="#pca-with-mixomics">PCA with <code>mixOmics</code></a></li>
+  <li><a href="#limitations-with-more-data-sets" id="toc-limitations-with-more-data-sets" class="nav-link" data-scroll-target="#limitations-with-more-data-sets">Limitations with more data sets</a></li>
+  </ul></li>
+  <li><a href="#cca-and-gcca-beyond-one-data-set" id="toc-cca-and-gcca-beyond-one-data-set" class="nav-link" data-scroll-target="#cca-and-gcca-beyond-one-data-set">CCA and GCCA (beyond one data set)</a>
+  <ul>
+  <li><a href="#gcca-with-mixomics" id="toc-gcca-with-mixomics" class="nav-link" data-scroll-target="#gcca-with-mixomics">GCCA with <code>mixOmics</code></a>
+  <ul class="collapse">
+  <li><a href="#design" id="toc-design" class="nav-link" data-scroll-target="#design"><code>design</code></a></li>
+  <li><a href="#keepx" id="toc-keepx" class="nav-link" data-scroll-target="#keepx"><code>keepX</code></a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#supervised-integration" id="toc-supervised-integration" class="nav-link" data-scroll-target="#supervised-integration">Supervised integration</a>
+  <ul>
+  <li><a href="#partial-least-squares-and-block-pls" id="toc-partial-least-squares-and-block-pls" class="nav-link" data-scroll-target="#partial-least-squares-and-block-pls">Partial Least Squares and block PLS</a></li>
+  <li><a href="#diablo" id="toc-diablo" class="nav-link" data-scroll-target="#diablo">DIABLO</a>
+  <ul class="collapse">
+  <li><a href="#tuning-number-of-components" id="toc-tuning-number-of-components" class="nav-link" data-scroll-target="#tuning-number-of-components">Tuning number of components</a></li>
+  <li><a href="#variable-selection" id="toc-variable-selection" class="nav-link" data-scroll-target="#variable-selection">Variable selection</a></li>
+  <li><a href="#final-model" id="toc-final-model" class="nav-link" data-scroll-target="#final-model">Final model</a></li>
+  <li><a href="#network-visualization" id="toc-network-visualization" class="nav-link" data-scroll-target="#network-visualization">Network visualization</a></li>
+  <li><a href="#predicting-new-cases" id="toc-predicting-new-cases" class="nav-link" data-scroll-target="#predicting-new-cases">Predicting new cases</a></li>
+  <li><a href="#was-the-integration-successful" id="toc-was-the-integration-successful" class="nav-link" data-scroll-target="#was-the-integration-successful">Was the integration successful?</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<p>Set up the environment</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-2_f4066c34c5030d43f7df586060664955">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># list of packages to be installed</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"mixOmics"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># check and install missing packages</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>new_packages <span class="ot">&lt;-</span> packages[<span class="sc">!</span>(packages <span class="sc">%in%</span> <span class="fu">installed.packages</span>()[,<span class="st">"Package"</span>])]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">length</span>(new_packages)) <span class="fu">install.packages</span>(new_packages, <span class="at">dependencies =</span> <span class="cn">TRUE</span>, <span class="at">type =</span> <span class="st">"binary"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># load the libraries</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mixOmics)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In classical data integration, we would like to use information across different modalities (e.g.&nbsp;transcriptome, proteome and metabolome) to gain more comprehensive insights into the biological systems under study. This type of data can be used for an array of different purposes including but not limited to molecular classification, stratification of patients, outcome predictions and understanding of regulatory processes such as gene regulation and pathway analysis.</p>
+<p>We are going to see how to work with <code>mixOmics</code> package both for unsupervise and supervise method integration, using methods that under the hood are derived based on matrix decomposition techniques, such as Singular Value Decomposition (SVD).</p>
+<!-- Here we are going to learn about matrix decomposition and how it can be used to integrate multimodal data. Matrix decomposition provides us with simple yet powerful tool to explore our data and extract meaningful information from it. Matrix decomposition techniques, such as Singular Value Decomposition (SVD) allow us to break down a complex matrix into simpler, more manageable components. These components can then be analyzed to uncover underlying patterns, trends, and structures within the data. We are going to revisit PCA and look at generalized canonical correlation analysis (GCCA) including partial least squares discriminant analysis (PLS-DA) and its multiomics expansion. -->
+</section>
+<section id="data" class="level1">
+<h1>Data</h1>
+<p>We will use TCGA data set from <code>mixOmics</code>, where features are in the columns and samples in the rows.</p>
+<blockquote class="blockquote">
+<p><em>This data set is a small subset of the full data set from The Cancer Genome Atlas. It contains the expression or abundance of three matching omics data sets: mRNA, miRNA and proteomics for 150 breast cancer samples (with three molecular subtypes of breast cancer: Basal, Her2, Luminal A) in the training set, and 70 samples in the test set. The test set is missing the proteomics data set.</em></p>
+</blockquote>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-3_fae2c22c4efd6b937f2db10301cafd9d">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># download the dataset</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">download.file</span>(<span class="st">"https://github.com/mixOmicsTeam/mixOmics/raw/master/data/breast.TCGA.rda"</span>, <span class="at">destfile =</span> <span class="st">"TCGA.rda"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># load the data</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"TCGA.rda"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This data, when loaded, has already been split into a list with two elements: training and testing. The first element (training) contains four elements, again lists, containing miRNA, mRNA, proteomics and cancer molecular subtypes. The second element (testing) contains three lists holding miRNA, mRNA and molecular subtypes data (proteomics data are missing here).</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-4_3b846f3af4f0e74ea0917109f227e9eb">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># preview data</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(breast.TCGA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>List of 2
+ $ data.train:List of 4
+  ..$ mirna  : num [1:150, 1:184] 11.8 12.9 12.3 12 13.4 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:150] "A0FJ" "A13E" "A0G0" "A0SX" ...
+  .. .. ..$ : chr [1:184] "hsa-let-7a-1" "hsa-let-7a-2" "hsa-let-7a-3" "hsa-let-7b" ...
+  ..$ mrna   : num [1:150, 1:200] 4.36 1.98 1.73 4.36 2.45 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:150] "A0FJ" "A13E" "A0G0" "A0SX" ...
+  .. .. ..$ : chr [1:200] "RTN2" "NDRG2" "CCDC113" "FAM63A" ...
+  ..$ protein: num [1:150, 1:142] 0.0491 -0.08 -0.0328 -0.2053 0.0602 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:150] "A0FJ" "A13E" "A0G0" "A0SX" ...
+  .. .. ..$ : chr [1:142] "14-3-3_epsilon" "4E-BP1" "4E-BP1_pS65" "4E-BP1_pT37" ...
+  ..$ subtype: Factor w/ 3 levels "Basal","Her2",..: 1 1 1 1 1 1 1 1 1 1 ...
+ $ data.test :List of 3
+  ..$ mirna  : num [1:70, 1:184] 12.8 13.9 12.9 12.4 13.1 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:70] "A54N" "A2NL" "A6VY" "A3XT" ...
+  .. .. ..$ : chr [1:184] "hsa-let-7a-1" "hsa-let-7a-2" "hsa-let-7a-3" "hsa-let-7b" ...
+  ..$ mrna   : num [1:70, 1:200] 1.19 2.73 3.05 2.7 3.14 ...
+  .. ..- attr(*, "dimnames")=List of 2
+  .. .. ..$ : chr [1:70] "A54N" "A2NL" "A6VY" "A3XT" ...
+  .. .. ..$ : chr [1:200] "RTN2" "NDRG2" "CCDC113" "FAM63A" ...
+  ..$ subtype: Factor w/ 3 levels "Basal","Her2",..: 1 1 1 1 1 1 1 1 1 1 ...</code></pre>
+</div>
+</div>
+</section>
+<section id="pca-one-data-set" class="level1">
+<h1>PCA (one data set)</h1>
+<p>Principal Component Analysis, PCA, is a special case of SVD in which basic vectors, or principal components, are the eigenvectors of the data’s covariance matrix. These principal components are orthogonal and represent the directions of maximum variance in the data. If you want to know more about PCA look at <a href="http://payamemami.com/pca_basics/" title="PCA basics">here</a>.</p>
+<p>PCA might sound complex at first, but it can be understood intuitively as a method for simplifying and summarizing complex, multidimensional data. It is applicable to one data set at the time.</p>
+<p>Imagine a data set containing the expression levels of thousands of genes from a group of individuals. Each individual is represented by a complex data sample characterized by the expression levels of all these genes. Visualizing or analyzing such high-dimensional data can be very difficult.</p>
+<p>PCA simplifies this complex, multidimensional space by identifying the “principal components” of the data, which are new axes that capture the most significant patterns in the data. These axes are combinations of the original gene expression levels that explain the maximum variance in the dataset.</p>
+<p>For example, the first principal component (PC) might represent a combination of genes that change the most across all individuals. It could capture a general trend in gene expression that separates individuals based on age or response to a treatment. The second PC, orthogonal to the first, might capture the next highest variance, showing another layer of structure in the data, and so on.</p>
+<section id="pca-with-mixomics" class="level2">
+<h2 class="anchored" data-anchor-id="pca-with-mixomics">PCA with <code>mixOmics</code></h2>
+<p>There are many implementation of PCA algorithm, e.g.&nbsp;<code>prcomp()</code> function in R. <code>mixOmics</code> implements a very powerful PCA method that provide us not only with standard PCA but also with extra advantages such as handling of missing value, plotting and taking into account repeated measurements.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-5_d66e5f4d6301018735df3d1b8f3e5224">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extract miRNA data set from the training split</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_mirna <span class="ot">&lt;-</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># do PCA using mixOmics</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>pca_mixomics <span class="ot">&lt;-</span> mixOmics<span class="sc">::</span><span class="fu">pca</span>(data_mirna, <span class="at">ncomp =</span> <span class="dv">2</span>, <span class="at">center =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>pca_mixomics <span class="ot">&lt;-</span> mixOmics<span class="sc">::</span><span class="fu">pca</span>(data_mirna, <span class="at">ncomp =</span> <span class="dv">2</span>, <span class="at">center =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the PCA</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotIndiv</span>(pca_mixomics, </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">group=</span>breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>subtype, </span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ind.names =</span> F, </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                    <span class="at">legend =</span> T, </span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">title =</span> <span class="st">"miRNA PCA"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In the function above, we have performed a PCA with two components on miRNA data. The first principal component (PC1) captures 23% of the total variance, while the second principal component (PC2) accounts for an additional 9%. This means that together, PC1 and PC2 provide a simplified representation that encapsulates 32% of the total variability in the miRNA data.</p>
+<p>Examining the PCA plot, we can notice distinct patterns. The Basal cancer subtype is clustered on the right side of the plot, indicating an unique miRNA expression profile that is markedly different from the other subtypes. In contrast, the HER2 and LumA subtypes are more centered and somewhat intermingled towards the left, suggesting overlapping or similar patterns of miRNA expression. Most of the differences are represented in the PC1, so it is probably our most important factor to focus on!</p>
+<p>This observed separation and overlap in the PCA plot is not just a graphical representation but is rooted in the underlying biology of these cancer subtypes. The positioning of the different groups on the PCA plot is influenced by the expression levels of various miRNAs, each contributing differently to the principal components.</p>
+<p>Now, as we go deeper into understanding the PCA plot, it becomes essential to explore the concept of <code>loadings</code>. Loadings help us to interpret the contribution of each miRNA to the principal components. They provide insights into which specific miRNAs are driving the separation between different cancer subtypes observed on the PCA plot.</p>
+<p>We can go ahead and plot the loadings. We start with our most important PC, that is PC1</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-6_a233e95312734207eeddfac0c281ec75">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># loadings for component 1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotLoadings</span>(pca_mixomics, <span class="at">comp =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="1152"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In this bar plot, each bar represents a specific miRNA. The length of the bar corresponds to the value of the loading of that miRNA on PC1, indicating its contribution to this principal component. The miRNAs with the highest absolute contributions are at the bottom, and those with the lowest are at the top, making it easy to identify the most influential miRNAs. Both the length and direction of each bar provide crucial insights into the miRNA’s contribution to the first principal component (PC1). The <strong>length of the bar</strong> signifies the magnitude of the miRNA’s contribution. Longer bars indicate miRNAs that have a more substantial influence on the variance captured by PC1, highlighting them as key elements in distinguishing different patterns of gene expression within the dataset.</p>
+<p>The <strong>direction of the bar</strong> adds another layer of interpretation. Bars extending to the right represent miRNAs that are positively correlated with PC1, indicating that as the values of these miRNAs increase, so does the score of PC1. Conversely, bars extending to the left suggest a negative correlation, meaning as the values of these miRNAs increase, the score of PC1 decreases. This directional information can be important in understanding the expression patterns of miRNAs in different breast cancer subtypes. For instance, miRNAs that are positively correlated with PC1 might be highly expressed in the Basal subtype but low in others, offering insights into the molecular distinctions between these cancer subtypes.</p>
+</section>
+<section id="limitations-with-more-data-sets" class="level2">
+<h2 class="anchored" data-anchor-id="limitations-with-more-data-sets">Limitations with more data sets</h2>
+<p>Score plot together with loading give us powerful tool to investigate patterns in a single data set. But how about if we have multiple data sets? Can we simply go ahead and merge multiple data sets into one and do PCA on this merged data?</p>
+<p>While it might be tempting to merge multiple data sets into one and proceed with PCA, this approach has several challenges and limitations. Different data sets can have variations in terms of units, scales, and data collection methods. Simply merging them without addressing these issues can lead to misleading PCA results, where the observed variance is more a reflection of the data sets’ inconsistencies rather than underlying biological patterns. In addition, when data sets are collected at different times, locations, or under different conditions, batch effects can occur. These systematic non-biological differences can confound the PCA results, making it difficult to detect true patterns and relationships within the data. This leads us to multi-omics analysis, where techniques like Canonical Correlation Analysis (CCA) offer ways to detect correlated patterns between two or more omics data sets, and provide a more holistic view of the underlying biological processes.</p>
+</section>
+</section>
+<section id="cca-and-gcca-beyond-one-data-set" class="level1">
+<h1>CCA and GCCA (beyond one data set)</h1>
+<p>Canonical Correlation Analysis, CCA, is similar to PCA with the capability to analyze multivariate correlations between <strong>two data sets</strong>. While PCA focuses on maximizing variance within a single dataset, CCA identifies linear combinations of variables from two data sets that are maximally correlated. These linear combinations of variables are known as canonical variables. CCA provides pairs of canonical variables and their associated canonical correlations, giving insights into the shared structure and relationships between the data sets. This is particularly suited in multi-omics studies, where understanding the interplay between different types of biological data is crucial.</p>
+<p>Generalized Canonical Correlation Analysis (GCCA) extends CCA to <strong>multiple data sets</strong>.</p>
+<section id="gcca-with-mixomics" class="level3">
+<h3 class="anchored" data-anchor-id="gcca-with-mixomics">GCCA with <code>mixOmics</code></h3>
+<p><code>mixOmics</code> package provides us with a very good interface to do GCCA with a lot of flexibility. The main function is called <code>wrapper.sgcca()</code> and we are now going to have a look some its main functionality.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-7_941ecfe002ec7ab26d671212f6f86a27">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># center the data of individual omics</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>X_centered <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna, <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>Y_centered <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mrna, <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>Z_centered <span class="ot">&lt;-</span> <span class="fu">scale</span>(breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>protein, <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># create a list with data for easier access</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>data_merged <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">mirna=</span>X_centered, <span class="at">mrna=</span>Y_centered, <span class="at">protein=</span>Z_centered)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># perform a simple GCCA</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>gcc_three_datasets <span class="ot">&lt;-</span> mixOmics<span class="sc">::</span><span class="fu">wrapper.sgcca</span>(data_merged, <span class="at">ncomp =</span> <span class="dv">2</span>, <span class="at">scale =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotIndiv</span>(gcc_three_datasets, <span class="at">group =</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>subtype,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ind.names =</span> <span class="cn">FALSE</span>, <span class="at">legend =</span> <span class="cn">TRUE</span>, <span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="1344"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So here comes the similar score plot of GCCA. We can clearly see the shared latent factors discovered by GCCA, separating our three groups. We can investigate loadings to know more about what variables has more influence on these latent components.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-8_96752912fa54269a923642f69ee8ef75">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot top 20 loadings</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotLoadings</span>(gcc_three_datasets, <span class="at">comp =</span> <span class="dv">1</span>, <span class="at">ndisplay =</span> <span class="dv">20</span>, <span class="at">size.title =</span> <span class="dv">1</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here, instead of having a single loading plot we have three, one for each omics. The interpretation is the same as previously for the PCA loadings. The higher the absolute value the more influence a particular variable has on the latent scores.</p>
+<p>There are options provided by the <code>wrapper.scgcca()</code> function. We are going to focus on the most important ones, namely <code>design</code> and <code>keepX</code>.</p>
+<section id="design" class="level4">
+<h4 class="anchored" data-anchor-id="design"><code>design</code></h4>
+<p>As we previously demonstrated, we can weight the scores from different omics before combining them. The <code>design</code> parameter gives us a powerful way of choosing which data view to focus on more and define the relation between the data.</p>
+<p>Think of <code>design</code> as a grid where each cell’s value, ranging from 0 to 1, indicates the strength of the relationship between two corresponding data blocks. A value of 0 means no relationship, while 1 signifies a strong connection. When you are setting up your analysis, adjusting these values can help you emphasize or de-emphasize certain relationships, giving you the flexibility to focus on interactions that are of interest.</p>
+<p>For instance, if you are curious about how two particular blocks of data interact, you’d set their corresponding value in the design matrix closer to 1. This tells sGCCA, “Hey, pay extra attention here!” Conversely, if you believe two other blocks are not significantly related, setting their value closer to 0 directs the analysis to not invest much energy in exploring that connection.</p>
+<p>In our previous example, we chose not to provide a design matrix, in this case, <code>mixOmics</code> will construct a design matrix in all data sets have strongest connect (1) to each other.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-9_e1685e7e3621c595205a8240e453a5f7">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># show design matrix constructed by default by mixOmics</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(gcc_three_datasets<span class="sc">$</span>design) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(gcc_three_datasets<span class="sc">$</span>design) <span class="ot">&lt;-</span> <span class="fu">names</span>(data_merged)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(gcc_three_datasets<span class="sc">$</span>design)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        mirna mrna protein
+mirna       0    1       1
+mrna        1    0       1
+protein     1    1       0</code></pre>
+</div>
+</div>
+</section>
+<section id="keepx" class="level4">
+<h4 class="anchored" data-anchor-id="keepx"><code>keepX</code></h4>
+<p><code>keepX</code> is used in refining GCCA analysis by controlling number of variables to retain in each block of data during the analysis. <code>keepX</code> is like a filter that helps you keep only the most valuable variables, enhancing the clarity and focus of your analysis. You provide a vector of integers to <code>keepX</code>, each integer corresponding to the number of variables you want to retain from each data block. It is a balancing act - retaining more variables can capture complex patterns but might also introduce noise. On the other hand, keeping fewer variables simplifies the model but might miss out on nuanced interactions. Adjusting <code>keepX</code> is a practical step in iterative model refinement, ensuring that your analysis is both robust and focused, honing in on the most informative variables to answer your specific research questions.</p>
+<div id="exr-sgcca" class="theorem exercise">
+<p><span class="theorem-title"><strong>Exercise 1 (Design and keepX) </strong></span>&nbsp;</p>
+<ol type="1">
+<li><p>Can you construct a design matrix to specify relationships between mRNA, miRNA and protein data set? Set the relationship between mRNA and protein to 0.9, between mRNA and miRNA to 0.8 and between protein and miRNA to 0.7.</p></li>
+<li><p>Retain only 10 variables for each omics.</p></li>
+<li><p>Run the GCCA and plot the data and loadings.</p></li>
+<li><p>Compare the results to previous GCCA analysis. Any differences?</p></li>
+</ol>
+</div>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-10_433b406d754da95edac5702b36553ca3">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define design matrix</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># show design matrix constructed by default by mixOmics</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.8</span>, <span class="fl">0.7</span>, <span class="fl">0.8</span>, <span class="dv">0</span>, <span class="fl">0.9</span>, <span class="fl">0.7</span>, <span class="fl">0.9</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(design) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(design) <span class="ot">&lt;-</span> <span class="fu">names</span>(data_merged)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># perform GCCA</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>gcc_three_datasets <span class="ot">&lt;-</span> mixOmics<span class="sc">::</span><span class="fu">wrapper.sgcca</span>(data_merged, <span class="at">ncomp =</span> <span class="dv">2</span>, <span class="at">scale =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">design =</span> design,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                                              <span class="at">keepX =</span> <span class="fu">list</span>(<span class="at">mirna =</span> <span class="dv">10</span>, <span class="at">mrna =</span> <span class="dv">10</span>, <span class="at">protein =</span> <span class="dv">10</span>))</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotIndiv</span>(gcc_three_datasets, <span class="at">group =</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>subtype,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ind.names =</span> <span class="cn">FALSE</span>, <span class="at">legend =</span> <span class="cn">TRUE</span>, <span class="at">legend.position =</span> <span class="st">"top"</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co"># plot top 10 loadings</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>mixOmics<span class="sc">::</span><span class="fu">plotLoadings</span>(gcc_three_datasets, <span class="at">comp =</span> <span class="dv">1</span>, <span class="at">ndisplay =</span> <span class="dv">10</span>, <span class="at">size.title =</span> <span class="dv">1</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+</section>
+<section id="supervised-integration" class="level1">
+<h1>Supervised integration</h1>
+<p>So far we have been dealing with unsupervised data integration, using only the training part of the TCGA for this purpose. At no point we were trying to make predictions for the cancer subtypes for the testing part of the data.</p>
+<p>In supervise data integration, we want to use the training data, across many omics, to build a model to represent the data and linking it to the outcome, here cancer subtype. Once we have a good model we can use it to make predictions for the samples not seen previously by the model, here our testing data.</p>
+<section id="partial-least-squares-and-block-pls" class="level2">
+<h2 class="anchored" data-anchor-id="partial-least-squares-and-block-pls">Partial Least Squares and block PLS</h2>
+<p><em>PLS</em></p>
+<p>We are now going to define an outcome variable and use that to perform supervised data integration. This is where Partial Least Squares (PLS) comes into play, a method that not only facilitates the integration of data from various sources but also enables the prediction of an outcome variable by identifying the relationships between observed variables and the outcomes of interest.</p>
+<p>PLS serves as a bridge between principal component analysis (PCA) and regression analysis. PLS is particularly useful when dealing with complex, high-dimensional, and multicollinear data, where traditional regression models may falter due to overfitting or multicollinearity issues.</p>
+<p>In PLS, the predictor variables (or features such as miRNA or mRNA) and the response variables (or outcomes such as cancer subtypes) are projected to a new subspace formed by latent variables (or components). These latent variables are linear combinations of the original variables and are constructed in such a way that they maximize the covariance between the predictors and the response. This is a key distinction from PCA, which only considers the variance of the predictor variables.</p>
+<p>A classical version of PLS is applicable to two data sets only. For instance we could try to use miRNA data set as explanatory one and regress it onto protein data sets (outcome). We would end up with the single pairs of scores which maximize the covariance between miRNA and protein data sets. You can think about PLS as ordinary regression where both the predictor and response variables are simultaneously transformed to a new space defined by latent variables. These latent variables are constructed to maximize the covariance between the transformed predictor and response variables, ensuring that the most relevant features for prediction are captured.</p>
+<p><strong>PLS-DA</strong> is an extension of PLS designed for classification tasks, where it helps differentiate between predefined classes or groups based on multivariate data. For instance, in our case we could try to use PLS-DA to predict cancer subtypes based on one of the omics such as miRNA. Note, the difference, to the PLS above, where we used miRNA data to explain protein values (regression task).</p>
+<p>Finally, both PLS and PLS-DA can be expanded to include multiple data sets, such as miRNA and mRNA, in <strong>block PLS</strong>. This can be use both for classification and regression.</p>
+</section>
+<section id="diablo" class="level2">
+<h2 class="anchored" data-anchor-id="diablo">DIABLO</h2>
+<p>Using <code>mixOmics</code> one can perform multi block PLS using <code>block.pls</code> function. DIABLO is the name of the <code>mixOmics</code> framework that implements multi block PLS-DA (see <a href="http://mixomics.org/mixdiablo/">here</a>. Let’s try it out on miRNA and mRNA to eventually predict the cancer subtypes.</p>
+<p>We start by defining the training data, based on miRNA and mRNA.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-11_46c906aabf2ad5b1ee02597555bc6d31">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define training data</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>training_data <span class="ot">=</span> <span class="fu">list</span>(<span class="at">miRNA =</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mirna, </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">mRNA =</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>mrna)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>Y_training <span class="ot">&lt;-</span> breast.TCGA<span class="sc">$</span>data.train<span class="sc">$</span>subtype</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We need also to introduce the concept of <code>design</code> matrix. Here, it is a different concept than a design matrix used to capture study design, e.g.&nbsp;when running linear models for gene expression in packages as edgeR.</p>
+<p>Here, think of <code>design</code> as a grid where each cell’s value, ranging from 0 to 1, indicates the strength of the relationship between two corresponding data blocks. A value of 0 means no relationship, while 1 signifies a strong connection. When you are setting up your analysis, adjusting these values can help you emphasize or de-emphasize certain relationships, giving you the flexibility to focus on specific interactions that are of interest.</p>
+<p>Choosing the magnitude of the relationship is not straightforward. It for example can be from previous experiments or so. But generally choosing a very high value will have negative impact on the prediction ability of the model. Choosing a very low value on the other hand will cause discarding the relationship between the data blocks. Here we randomly choose to go with <code>0.2</code> to describe the strength of relationship between miRNA and RNA. In practice one might want to do Sensitivity Analysis or Cross-Validation to try to optimize this value.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-12_2fa87aa44cba2fa6242d9fa683dddcdb">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># define square matrix filled with 0.2</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>design <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fl">0.2</span>, <span class="at">ncol =</span> <span class="fu">length</span>(training_data), <span class="at">nrow =</span> <span class="fu">length</span>(training_data), </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">names</span>(training_data), <span class="fu">names</span>(training_data)))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(design) <span class="ot">=</span> <span class="dv">0</span> <span class="co"># set diagonal to 0s</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(design)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      miRNA mRNA
+miRNA   0.0  0.2
+mRNA    0.2  0.0</code></pre>
+</div>
+</div>
+<p>We can now proceed with running the analysis</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-13_b942ecdfb5d27ddd8e88f25849f99262">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mixOmics)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(<span class="at">X =</span> training_data, <span class="at">Y =</span> Y_training, <span class="at">ncomp =</span> <span class="dv">2</span>, <span class="at">design =</span> design) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+</div>
+<p>Right now we have a model that includes two components. We can go ahead and visualize the PLS scores.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-14_7f9828148dc419bcca37ce06d12abc8e">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot results</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotIndiv</span>(diablo.model,<span class="at">ind.names =</span> F,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend =</span> T, <span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We see three separate clusters formed in the PLS space in both OMICS. That looks great! But this can be misleading. We need to be able to systematically say how good our model’s performance is before making any interpretation. This means we need to check whethever we have fitted the data well enough or wherever we have overfitted the data.</p>
+<p><strong>Overfitting</strong> occurs when a model is too complex, capturing noise in the training data and making it less effective in generalizing to new, unseen data. It essentially “memorizes” the training data, leading to excellent performance on that specific dataset but poor performance on a new data set. To mitigate overfitting and evaluate the model’s performance accurately, we employ techniques like cross-validation. Cross-validation involves partitioning the original training data set into a training set and a validation set. The model is then trained (build) on the training set and evaluated on the validation set. This process is repeated several times, with different partitions, to obtain a more generalized model performance metric. Techniques like k-fold cross-validation, where the original training set is divided into k subsets and the model is trained k times, each time using a different subset as the validation set, are commonly used. This rigorous evaluation process helps in assessing the model’s ability to generalize, ensuring that it performs well not just on the training data, but on unseen data as well. For more information see <a href="https://nbisweden.github.io/workshop-mlbiostatistics/session-supervise/docs/intro.html">here</a>.</p>
+<p><code>mixOmics</code> provides us with a function (<code>perf</code>) to evaluate the model using cross-validation. We are going to do a 10-fold cross-validation and repeat it 10 times. This means that the entire dataset is divided into 10 equal parts, or “folds”. In each iteration, 9 folds are used for training the model, and the remaining fold is used for testing. This process is repeated 10 times, with each fold getting a chance to be the test set. The model’s performance is then averaged over all the iterations to get a more stable and reliable estimate of its performance. Repeating the entire 10-fold cross-validation process 10 times helps in reducing the variability associated with the random splitting of data and provides a more robust measure of the model’s accuracy and generalizability. Each repetition involves a different random split of the data into folds, ensuring diverse training and testing combinations and thus, a comprehensive evaluation.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-15_98e8c2ed9412d0e3230b530d3d3c0441">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(<span class="at">X =</span> training_data, </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Y =</span> Y_training, </span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ncomp =</span> <span class="dv">2</span>, </span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">design =</span> design) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>perf.diablo <span class="ot">=</span> <span class="fu">perf</span>(diablo.model, </span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf.diablo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Alright. This plots gives us a lot of information. The colors represent which distance measure has been used to assign groups to the test data. As we discussed we can use different distance measurement to predict the classes from the PLS continuous values. In practice these distances should do very similar but one might want to focus on centroid and mahalanobis distance more.</p>
+<p>The type of the line (solid and dashed) shown <strong>error rate (ER)</strong> and <strong>balanced error rate (BER)</strong> respectively. Error Rate (ER) is the proportion of incorrect predictions made by the model over the total number of predictions, while Balanced Error Rate (BER) is the average error rates across all classes, ensuring that each class contributes equally to the overall error rate, even if the classes are imbalanced in size. In the plot, different line types allow for an easy visual comparison between these two metrics for each distance measure.</p>
+<p>The x-axis represents the number of components included in the model, which is a crucial aspect of PLS-DA. By observing how the error rates change with the inclusion of additional components, one can identify the optimal number of components that minimizes the error rates, striking a balance between model complexity and predictive accuracy.</p>
+<p>In evaluating these plots, one should look for the point where both <strong>ER and BER are minimized</strong>, indicating optimal model performance. Special attention should be given to the results obtained using <strong>centroid and Mahalanobis distances</strong>, as they often provide a more nuanced and reliable classification, especially in complex multiclass scenarios or when the data distribution is not straightforward. By comparing the error rates associated with different distance measures and numbers of components, one can fine-tune the PLS-DA model for optimal classification performance.</p>
+<p><code>perf</code> functions gives a lot of other information but probably the most useful ones are:</p>
+<ul>
+<li>auc: Averaged AUC values over the nrepeat (if requested)</li>
+<li>MajorityVote.error.rate: ff more than one block, returns the error rate of the MajorityVote output</li>
+</ul>
+<p>Have a look at the help page of the function to know more.</p>
+<p>Now we know that we do actually fairly good because low error rate, meaning that the model is usable.</p>
+<div id="exr-diablo" class="theorem exercise">
+<p><span class="theorem-title"><strong>Exercise 2 (DIABLO) </strong></span>Can we make the above model better? Try changing the design matrix to different values, e.g.&nbsp;0.8 or 0.1 and compare the results of cross-validation.</p>
+</div>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-16_70e1e763456e7a48780bf27ffca68093">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># update design matrix</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>design_new <span class="ot">&lt;-</span> design</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>design_new[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> design_new[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># re-run DIABLO</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(<span class="at">X =</span> training_data, </span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Y =</span> Y_training, </span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ncomp =</span> <span class="dv">2</span>, </span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>                            <span class="at">design =</span> design_new) </span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>perf.diablo <span class="ot">=</span> <span class="fu">perf</span>(diablo.model, </span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>                   <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf.diablo)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Comment: </span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a><span class="co"># In this case selecting lower values of connection between mRNA and miRNA yields smaller ER and BER with 2 components</span></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a><span class="co"># and selecting high values of 0.8 yields higher ER and BER with 2 components. </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="tuning-number-of-components" class="level3">
+<h3 class="anchored" data-anchor-id="tuning-number-of-components">Tuning number of components</h3>
+<p>I guess you also asked yourself why we should use two components. Maybe we can go higher? Or lower? We can try to tune number of components by simply including more components in the model and redoing the cross-validation.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-17_f0ef7ad67e139dfbbc8e364dc611b8ac">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(<span class="at">X =</span> training_data, </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Y =</span> Y_training, </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ncomp =</span> <span class="dv">5</span>, </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">design =</span> design) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>perf.diablo <span class="ot">=</span> <span class="fu">perf</span>(diablo.model, </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf.diablo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is the same plot as before but now we have more component on the x-axis. What this plot tells us that the error rate sharply decreases from ~0.3 to 0.1 just by including two components instead of one. Then we have smaller decrease from component two to three. After that the improvement is very little. So shall we should use 3 components or five? This is where the trade-off between model complexity and performance comes into play. While adding more components can lead to a slight decrease in error rate, it also increases the complexity of the model, which can lead to more difficulty in interpretation etc. So we should go for the least complex model that gives us a reasonable error rate.</p>
+<p><code>mixOmics</code> gives us an automated way of selecting the best component. We can see <code>mixOmics</code> choice using:</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-18_eb3be4b88e2bb0e7bc112fa2d1c1307d">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(perf.diablo<span class="sc">$</span>choice.ncomp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$AveragedPredict
+            [,1]
+Overall.ER     4
+Overall.BER    4
+
+$WeightedPredict
+            [,1]
+Overall.ER     3
+Overall.BER    3
+
+$MajorityVote
+            max.dist centroids.dist mahalanobis.dist
+Overall.ER         5              3                3
+Overall.BER        4              3                3
+
+$WeightedVote
+            max.dist centroids.dist mahalanobis.dist
+Overall.ER         3              3                4
+Overall.BER        3              3                4</code></pre>
+</div>
+</div>
+<p>I this case, we are going to use majority vote and <code>mahalanobis.dist</code> so we we choose three components and redo the analysis.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-19_a01e2634d306f6e7a96c4ccf1098470d">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>ncomps <span class="ot">&lt;-</span> perf.diablo<span class="sc">$</span>choice.ncomp<span class="sc">$</span>MajorityVote[<span class="st">"Overall.BER"</span>,<span class="st">"centroids.dist"</span>]</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(<span class="at">X =</span> training_data, </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">Y =</span> Y_training, </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ncomp =</span> ncomps, </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>                            <span class="at">design =</span> design) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+</div>
+</section>
+<section id="variable-selection" class="level3">
+<h3 class="anchored" data-anchor-id="variable-selection">Variable selection</h3>
+<p>We now have a working model with a reasonably low error rate. We can use this model to extract the most important features (e.g.&nbsp;miRNA or mRNA) that gave us such a discriminatory pattern we saw in the score plots.</p>
+<p>We should do that three times in fact. One for each components. We have one set of loading for each component and for each block of data. it is quite a lot of work to go through these loadings. In the following plots, the bars have a color corresponding the group which has the maximum (<code>max</code> in contrib) of average (<code>mean</code> in method) among all the groups.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-20_f010d9139e5282392020c5c6338f72a8">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotLoadings</span>(diablo.model, <span class="at">comp=</span><span class="dv">1</span>, <span class="at">contrib=</span><span class="st">'max'</span>, <span class="at">method=</span><span class="st">'mean'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotLoadings</span>(diablo.model, <span class="at">comp=</span><span class="dv">2</span>, <span class="at">contrib=</span><span class="st">'max'</span>, <span class="at">method=</span><span class="st">'mean'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-20-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotLoadings</span>(diablo.model, <span class="at">comp=</span><span class="dv">3</span>, <span class="at">contrib=</span><span class="st">'max'</span>, <span class="at">method=</span><span class="st">'mean'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-20-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Similar to what we said before, the most important variables, according to the absolute value of their coefficients, are ordered from bottom to top. One can go ahead and examine top <span class="math inline">\(n\)</span> variables, e.g.&nbsp;10. They have the same interpretation as before: bars extending to the right represent features that are positively correlated with PC1, indicating that as the values of these features increase, so does the score of corresponding component. Conversely, bars extending to the left suggest a negative correlation, meaning as the values of these features increase, the score of the component decreases.</p>
+<p>In this specific example we have a limited number of features so it might be feasible to do it manually. However, in practice most omics data sets are large and that will make it very difficult to choose a right cutoff to select the number of features per omics.</p>
+<p>Fortunately, <code>mixOmics</code> gives us an automated way of selecting variables using <code>tune.block.splsda</code> function. The only thing we have to do is to select a grid of plausible values for each component to test. <code>mixOmics</code> will then do cross-validation and try to give us the most influential variables on the model and discard the rest. This means that, given a vector of possible number of variables, the function will pinpoint the optimal subset that contributes the most to our model’s predictive power, ensuring both efficiency and accuracy in our analysis.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-21_946e44520e48529455e932a6f5fa6c93">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set grid of plausible values for each component to test</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>test.keepX <span class="ot">=</span> <span class="fu">list</span> (<span class="at">mirna =</span><span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">18</span>, <span class="dv">2</span>),</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">mrna =</span> <span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">18</span>, <span class="dv">2</span>))</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                   </span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="co"># run the feature selection tuning</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>tune.TCGA <span class="ot">=</span> <span class="fu">tune.block.splsda</span>( training_data, <span class="at">Y =</span> Y_training, <span class="at">ncomp =</span> ncomps, </span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">test.keepX =</span> test.keepX, <span class="at">design =</span> design,</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>                              <span class="at">validation =</span> <span class="st">'Mfold'</span>, <span class="at">folds =</span> <span class="dv">10</span>, <span class="at">nrepeat =</span> <span class="dv">1</span>,</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>                              <span class="at">dist =</span> <span class="st">"centroids.dist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+You have provided a sequence of keepX of length: 5 for block mirna and 5 for block mrna.
+This results in 25 models being fitted for each component and each nrepeat, this may take some time to run, be patient!</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+You can look into the 'BPPARAM' argument to speed up computation time.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tune.TCGA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This bar plot can help us seeing the process of variable selection. In each component the x-axis is BER and y-axis is the combination of the number of selected variable in omics1 (mirna) and omics2 (mrna) which has been written as omics1_omics2 (for example 10_12 means 10 variables from <code>mirna</code> and 12 variables from <code>mrna</code> block). Again we are going to look for the least complex (fewer variables) model with lower BER. In component one the top 5 selections are in the top of the plot, the least numbers among them is <code>10_16</code>, similarly we can select <code>10_14</code> for the second component and <code>10_18</code> for the last one. mixOmics also gives us these numbers in <code>choice.keepX</code> list.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-22_6d4237e0fbac325c8ab8e3787ff4db51">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(tune.TCGA<span class="sc">$</span>choice.keepX)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$miRNA
+[1] 10 10 10
+
+$mRNA
+[1] 16 14 18</code></pre>
+</div>
+</div>
+<p>Now that we have the number of variables we can go ahead and do the final model:</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-23_99b54cc003b7a3f0648eb397220e51c9">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set the optimised DIABLO model</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>final.diablo.model <span class="ot">=</span> <span class="fu">block.splsda</span>(training_data, </span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">Y =</span> Y_training, </span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">ncomp =</span> ncomps,</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">keepX =</span> tune.TCGA<span class="sc">$</span>choice.keepX, </span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">design =</span> design)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Design matrix has changed to include Y; each block will be
+            linked to Y.</code></pre>
+</div>
+</div>
+<p>Now for each components we can see which variables have been selected. For example for component 1.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-24_89406067057f83e9f5317f8d8738d844">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">selectVar</span>(final.diablo.model, <span class="at">block =</span> <span class="st">'miRNA'</span>, <span class="at">comp =</span> <span class="dv">1</span>)<span class="sc">$</span>miRNA<span class="sc">$</span>name </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "hsa-mir-17"   "hsa-mir-505"  "hsa-mir-590"  "hsa-mir-130b" "hsa-mir-20a" 
+ [6] "hsa-mir-106a" "hsa-mir-106b" "hsa-mir-197"  "hsa-mir-186"  "hsa-let-7d"  </code></pre>
+</div>
+</div>
+<p>What are the variables for mRNA?</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-25_b0fdc3af20086c7c156d9554c412bcdd">
+<details>
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">selectVar</span>(final.diablo.model, <span class="at">block =</span> <span class="st">'mRNA'</span>, <span class="at">comp =</span> <span class="dv">1</span>)<span class="sc">$</span>miRNA<span class="sc">$</span>name </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>Should we go ahead with these variables? Well, maybe! In that case we need to do last performance check of the final model.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-26_0ff56a70ee8654add92cc83db937a5a3">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>perf.diablo <span class="ot">=</span> <span class="fu">perf</span>(final.diablo.model, <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">folds =</span> <span class="dv">10</span>, <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf.diablo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>So based on what we see, we are seeing similar performance using only maximum of 18 variables. However, please note that these variables are not fixed when doing cross-validation. This means that different subsets of variables might be selected in different folds of the cross-validation, leading to variability in the selected features. This variability underscores the importance of feature stability, a crucial aspect to consider when evaluating the reliability of the selected features. It is not just about how well the model performs, but also about how consistent the selected features are across different subsets of the data.</p>
+<p>Moving towards variable stability, it becomes essential to assess the robustness of the selected variables. Are these variables consistently selected across different folds and repetitions of cross-validation? If a variable is often selected, it indicates that its inclusion in the model is not a product of random chance or specific to a particular subset of data, enhancing our confidence in its relevance and reliability.</p>
+<p>In the context of <code>mixOmics</code> and DIABLO, the <code>perf()</code> function provides insights into feature stability. By examining the stability scores, we can identify which features are consistently selected across multiple iterations of the model fitting process. A higher stability score indicates that a feature is consistently chosen across different folds and repetitions, marking it as a reliable variable that contributes significantly to the model’s predictive power. Check the Detailed Version of this lab, if interested how to examine the stability scors.</p>
+</section>
+<section id="final-model" class="level3">
+<h3 class="anchored" data-anchor-id="final-model">Final model</h3>
+<p>We finally have our fantastic model ready. It gives us good performance.</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-27_defc021c961051ac4a1f7747df2d474d">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotIndiv</span>(final.diablo.model, <span class="at">ind.names =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend.position =</span> <span class="st">"top"</span>, </span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">'DIABLO Sample Plots'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Visual inspection of the scores reveals a pronounced separation between the three cancer subtypes, suggesting that our selected variables hold significant discriminatory power. We can have a look at how these variables influence the shared space:</p>
+<div class="cell" data-layout-align="center" data-hash="mixomics-light_cache/html/unnamed-chunk-28_ee38f51edb0831031c281c0cea4a7c1f">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotVar</span>(final.diablo.model, <span class="at">var.names=</span><span class="cn">TRUE</span>, <span class="at">legend=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This is <strong>Correlation Circle Plot</strong>, a visual representation that overlays the loadings (from variables) from each omic layer. In this plot, when variables cluster near each other specially closer to the poles, it indicates a strong correlation among them, even if they originate from different omic layers. Conversely, variables positioned on opposing poles suggest a strong negative correlation. Correlation Circle Plot offers insights into feature-level interactions, revealing the relationships among variables across different omic layers.</p>
+</section>
+<section id="network-visualization" class="level3">
+<h3 class="anchored" data-anchor-id="network-visualization">Network visualization</h3>
+<p>While integration has allowed us to construct this shared space and see the top variables, its true potential lies in understanding the the interactions among the variables. To go deeper into these interactions and uncover the underlying network of relationships, we can utilize <code>mixOmics</code> <code>network</code> visualization and the <code>cim</code> function, offering a comprehensive view of how these features interplay across different omics layers.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-29_a20fe705637747d24d38db36f009ce5f">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>))</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>mixOmics_graph <span class="ot">&lt;-</span> <span class="fu">network</span>(final.diablo.model, <span class="at">cutoff =</span> <span class="fl">0.5</span>,</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="at">color.node =</span> <span class="fu">c</span>(<span class="st">"gold"</span>, <span class="st">"tomato"</span>),</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a><span class="at">shape.node =</span> <span class="fu">c</span>(<span class="st">"rectangle"</span>, <span class="st">"circle"</span>),</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="at">lty.edge =</span> <span class="st">"solid"</span>, <span class="at">lwd.edge =</span>  <span class="dv">1</span>, <span class="at">cex.node.name =</span> <span class="fl">0.4</span>,</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="at">show.edge.labels =</span> T, <span class="at">interactive =</span> <span class="cn">FALSE</span>, <span class="at">graph.scale =</span> <span class="fl">0.3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="mixomics-light_files/figure-html/unnamed-chunk-29-1.png" style="width:70.0%;height:70.0%"></p>
+</div>
+</div>
+<p>The above network is simply the results of calculating the correlation between the variables in the loadings space. We have selected to put the correlation cutoff on <code>0.7</code>, resulting removing the variables that have no edges (lines).</p>
+</section>
+<section id="predicting-new-cases" class="level3">
+<h3 class="anchored" data-anchor-id="predicting-new-cases">Predicting new cases</h3>
+<p>Now that we have the model, we can use it to predict new data, cancer subtypes unseen so far by the model.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-30_f881835d9f553bd321df51e3035bce79">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># organize test data</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>test_data <span class="ot">=</span> <span class="fu">list</span>(<span class="at">miRNA =</span> breast.TCGA<span class="sc">$</span>data.test<span class="sc">$</span>mirna, </span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">mRNA =</span> breast.TCGA<span class="sc">$</span>data.test<span class="sc">$</span>mrna)</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="co"># predict cancer subtypes</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>predicted_class_test <span class="ot">&lt;-</span> mixOmics<span class="sc">:::</span><span class="fu">predict.mint.splsda</span>(final.diablo.model,test_data)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>pred_classes_test <span class="ot">&lt;-</span> predicted_class_test<span class="sc">$</span>WeightedVote<span class="sc">$</span>centroids.dist[,<span class="dv">3</span>]</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>readl_classes_test <span class="ot">&lt;-</span> breast.TCGA<span class="sc">$</span>data.test<span class="sc">$</span>subtype</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="co"># create a confusion matrix</span></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>conf_matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(readl_classes_test, pred_classes_test)</span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the class error rates</span></span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>class_error <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">diag</span>(conf_matrix) <span class="sc">/</span> <span class="fu">rowSums</span>(conf_matrix)</span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the overall error rate</span></span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>overall_error_rate <span class="ot">&lt;-</span> (<span class="fu">sum</span>(conf_matrix) <span class="sc">-</span> <span class="fu">sum</span>(<span class="fu">diag</span>(conf_matrix))) <span class="sc">/</span> <span class="fu">sum</span>(conf_matrix)</span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a><span class="co"># BER</span></span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">mean</span>(class_error))</span>
+<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.04444444</span></span>
+<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Overall</span></span>
+<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overall_error_rate)</span>
+<span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.05714286</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This error rate is very good. So our model performs reasonably.</p>
+</section>
+<section id="was-the-integration-successful" class="level3">
+<h3 class="anchored" data-anchor-id="was-the-integration-successful">Was the integration successful?</h3>
+<p>In the case of the cancer suptypes prediction, we might want to ask the question if the integration is necessary or not?</p>
+<p>We are going to test this by first doing separate PLSDA on each omics and compare the performance to the integrated one. So we are trying to do everything as similar as possible and check the error rates.</p>
+<div class="cell" data-hash="mixomics-light_cache/html/unnamed-chunk-31_406c6619c873ad5295e352b1b93cf9a0">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>miRNA_plsda <span class="ot">&lt;-</span> <span class="fu">splsda</span>(training_data<span class="sc">$</span>miRNA, Y_training, <span class="at">ncomp =</span> <span class="dv">5</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>perf.diablo_miRNA_plsda <span class="ot">=</span> <span class="fu">perf</span>(miRNA_plsda, </span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                               <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>                               <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>                               <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>mRNA_plsda <span class="ot">&lt;-</span> <span class="fu">splsda</span>(training_data<span class="sc">$</span>mRNA, Y_training,<span class="at">ncomp =</span> <span class="dv">5</span>)</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>perf.diablo_mRNA_plsda <span class="ot">=</span> <span class="fu">perf</span>(mRNA_plsda, </span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>                              <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>                              <span class="at">folds =</span> <span class="dv">10</span>,</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>                              <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="co"># set grid of values for each component to test</span></span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>test.keepX <span class="ot">=</span> <span class="fu">list</span> (<span class="at">mirna =</span><span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">18</span>, <span class="dv">2</span>),</span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">mrna =</span> <span class="fu">seq</span>(<span class="dv">10</span>, <span class="dv">18</span>, <span class="dv">2</span>))</span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>                   </span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a><span class="co"># run the feature selection tuning</span></span>
+<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a>tune.miRNA_plsda <span class="ot">=</span> <span class="fu">tune.splsda</span>(training_data<span class="sc">$</span>miRNA, <span class="at">Y =</span> Y_training, </span>
+<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a>                               <span class="at">ncomp =</span> perf.diablo_miRNA_plsda<span class="sc">$</span>choice.ncomp[<span class="st">"BER"</span>,<span class="st">"centroids.dist"</span>], </span>
+<span id="cb49-21"><a href="#cb49-21" aria-hidden="true" tabindex="-1"></a>                               <span class="at">test.keepX =</span> test.keepX<span class="sc">$</span>mirna, </span>
+<span id="cb49-22"><a href="#cb49-22" aria-hidden="true" tabindex="-1"></a>                               <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb49-23"><a href="#cb49-23" aria-hidden="true" tabindex="-1"></a>                               <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb49-24"><a href="#cb49-24" aria-hidden="true" tabindex="-1"></a>                               <span class="at">nrepeat =</span> <span class="dv">1</span>,</span>
+<span id="cb49-25"><a href="#cb49-25" aria-hidden="true" tabindex="-1"></a>                               <span class="at">dist =</span> <span class="st">"centroids.dist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note that the number of components cannot be reliably tuned with nrepeat &lt; 3 or validaion = 'loo'.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>tune.mRNA_plsda <span class="ot">=</span> <span class="fu">tune.splsda</span>(training_data<span class="sc">$</span>mRNA, <span class="at">Y =</span> Y_training, </span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>                              <span class="at">ncomp =</span> perf.diablo_mRNA_plsda<span class="sc">$</span>choice.ncomp[<span class="st">"BER"</span>,<span class="st">"centroids.dist"</span>], </span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>                              <span class="at">test.keepX =</span> test.keepX<span class="sc">$</span>mrna, </span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>                              <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">nrepeat =</span> <span class="dv">1</span>,</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">dist =</span> <span class="st">"centroids.dist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note that the number of components cannot be reliably tuned with nrepeat &lt; 3 or validaion = 'loo'.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>final_miRNA_plsda <span class="ot">&lt;-</span> <span class="fu">splsda</span>(training_data<span class="sc">$</span>miRNA, Y_training,</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ncomp =</span> perf.diablo_miRNA_plsda<span class="sc">$</span>choice.ncomp[<span class="st">"BER"</span>,<span class="st">"centroids.dist"</span>],</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">keepX =</span> tune.miRNA_plsda<span class="sc">$</span>choice.keepX)</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>perf.diablo_miRNA_plsda <span class="ot">=</span> <span class="fu">perf</span>(final_miRNA_plsda, </span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>                               <span class="at">folds =</span> <span class="dv">10</span>, </span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>                               <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>final_mRNA_plsda <span class="ot">&lt;-</span> <span class="fu">splsda</span>(training_data<span class="sc">$</span>mRNA, Y_training,</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>                           <span class="at">ncomp =</span> perf.diablo_mRNA_plsda<span class="sc">$</span>choice.ncomp[<span class="st">"BER"</span>,<span class="st">"centroids.dist"</span>],</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>                           <span class="at">keepX =</span> tune.mRNA_plsda<span class="sc">$</span>choice.keepX)</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>perf.diablo_mRNA_plsda <span class="ot">=</span> <span class="fu">perf</span>(final_mRNA_plsda, </span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>                              <span class="at">validation =</span> <span class="st">'Mfold'</span>, </span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>                              <span class="at">folds =</span> <span class="dv">10</span>,</span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>                              <span class="at">nrepeat =</span> <span class="dv">10</span>)</span>
+<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Erro rates for Integrated analysis"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Erro rates for Integrated analysis"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>perf.diablo<span class="sc">$</span>WeightedPredict.error.rate[<span class="st">"Overall.BER"</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     comp1      comp2      comp3 
+0.33333333 0.08814815 0.07866667 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Erro rates for miRNA analysis"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Erro rates for miRNA analysis"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>perf.diablo_miRNA_plsda<span class="sc">$</span>error.rate<span class="sc">$</span>BER[,<span class="st">"centroids.dist"</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    comp1     comp2 
+0.2589630 0.2152593 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Erro rates for mRNA analysis"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Erro rates for mRNA analysis"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>perf.diablo_mRNA_plsda<span class="sc">$</span>error.rate<span class="sc">$</span>BER[,<span class="st">"centroids.dist"</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     comp1      comp2      comp3 
+0.09303704 0.08074074 0.08600000 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Prediction on the test set"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Prediction on the test set"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>predicted_class_test <span class="ot">&lt;-</span> <span class="fu">predict</span>(final_miRNA_plsda,test_data<span class="sc">$</span>miRNA)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>pred_classes_test<span class="ot">&lt;-</span>predicted_class_test<span class="sc">$</span>class<span class="sc">$</span>centroids.dist[,final_miRNA_plsda<span class="sc">$</span>ncomp]</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>readl_classes_test <span class="ot">&lt;-</span> breast.TCGA<span class="sc">$</span>data.test<span class="sc">$</span>subtype</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create a confusion matrix</span></span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>conf_matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(readl_classes_test, pred_classes_test)</span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the class error rates</span></span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a>class_error <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">diag</span>(conf_matrix) <span class="sc">/</span> <span class="fu">rowSums</span>(conf_matrix)</span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the overall error rate</span></span>
+<span id="cb67-14"><a href="#cb67-14" aria-hidden="true" tabindex="-1"></a>overall_error_rate <span class="ot">&lt;-</span> (<span class="fu">sum</span>(conf_matrix) <span class="sc">-</span> <span class="fu">sum</span>(<span class="fu">diag</span>(conf_matrix))) <span class="sc">/</span> <span class="fu">sum</span>(conf_matrix)</span>
+<span id="cb67-15"><a href="#cb67-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"miRNA"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "miRNA"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"BER:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "BER:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">mean</span>(class_error))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.168254</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Overall"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Overall"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overall_error_rate)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1857143</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="do">#######</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>predicted_class_test <span class="ot">&lt;-</span> <span class="fu">predict</span>(final_mRNA_plsda,test_data<span class="sc">$</span>mRNA)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>pred_classes_test<span class="ot">&lt;-</span>predicted_class_test<span class="sc">$</span>class<span class="sc">$</span>centroids.dist[,final_mRNA_plsda<span class="sc">$</span>ncomp]</span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>readl_classes_test <span class="ot">&lt;-</span> breast.TCGA<span class="sc">$</span>data.test<span class="sc">$</span>subtype</span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create a confusion matrix</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>conf_matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(readl_classes_test, pred_classes_test)</span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the class error rates</span></span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a>class_error <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">diag</span>(conf_matrix) <span class="sc">/</span> <span class="fu">rowSums</span>(conf_matrix)</span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the overall error rate</span></span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a>overall_error_rate <span class="ot">&lt;-</span> (<span class="fu">sum</span>(conf_matrix) <span class="sc">-</span> <span class="fu">sum</span>(<span class="fu">diag</span>(conf_matrix))) <span class="sc">/</span> <span class="fu">sum</span>(conf_matrix)</span>
+<span id="cb77-15"><a href="#cb77-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"miRNA"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "miRNA"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"BER:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "BER:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">mean</span>(class_error))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.03492063</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Overall"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Overall"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overall_error_rate)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.04285714</code></pre>
+</div>
+</div>
+<p>What do you think? Did the integration improve anything?</p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
